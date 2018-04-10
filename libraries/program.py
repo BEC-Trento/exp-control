@@ -21,6 +21,7 @@
 import action as lib_action
 import instruction as lib_instructions
 import ramp as lib_ramp
+import ttlpulse as lib_ttlpulse
 from copy import copy
 
 class Program(object):
@@ -59,7 +60,7 @@ class Program(object):
                     else:
                         setattr(action, f_key, functions[f_key](getattr(action, f_key)))
 
-        if isinstance(action, lib_ramp.Ramp):
+        if isinstance(action, (lib_ramp.Ramp, lib_ttlpulse.Pulse)):
             action = action.get_prg()
         if isinstance(action, (lib_action.Action, Program)):
             istr = lib_instructions.Instruction(time, action, enable=enable, parents=self)

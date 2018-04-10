@@ -22,6 +22,7 @@ def action_list_init(action_list):
 
     acts_path = "data/actions"
     for (dirpath, dirnames, filenames) in os.walk(acts_path):
+        filenames.sort()
         for fname in filenames:
             fstart, fext = os.path.splitext(fname)
             if fext == ".py" and fstart != "__init__":

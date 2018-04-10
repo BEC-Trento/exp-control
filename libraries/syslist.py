@@ -23,6 +23,7 @@ import program as lib_program
 import board as lib_board
 import system as lib_system
 import ramp as lib_ramp
+import ttlpulse as lib_ttlpulse
 
 class ActionList(object):
     def __init__(self, system=None):
@@ -116,29 +117,48 @@ class ActionList(object):
             if var_formats is None:
                 var_formats = dict()
 
-            if issubclass(action, (lib_action.Action, lib_ramp.Ramp)):
+            if issubclass(action, (lib_action.Action, lib_ramp.Ramp, lib_ttlpulse.Pulse)):
 
                 if handler is None:
                     def new_handler(*args, **kwargs):
-
-                        arg_dict = kwargs.items() + [("name", action_name)] + parameters.items()
+                    # Simone non aveva idea di come usare i dizionari
+                        # variables e args dovrebbe gia' contenere tutto
+#                        print args, kwargs, variables
+                        arg_dict = variables.copy()
+                        new_args = dict(zip(variables.keys(), args))
+                        arg_dict.update(new_args)
+                        arg_dict.update(parameters)
+                        arg_dict.update(dict(name = action_name))
                         if board is not None:
-                            arg_dict += [("board", board)]
-                        if len(args) == len(variables.keys()):
-                            arg_dict += zip(variables.keys(), args)
-                        elif len(kwargs.keys()) != len(variables.keys()):
-                            print "ERROR: wrong arguments call to action \"%s\" (arguments to be given are \"%s\")"%(action_name, str(variables))
+                            arg_dict.update(dict(board = board))
+                        arg_dict.update(kwargs)
+                        
+#                        if len(kwargs.keys()) != len(variables.keys()):
+#                            diff = set(variables.keys()) - set(kwargs.keys())
+#                            diff_dict = {k: variables[k] for k in diff}
+#                            print "WARNING: default args left in call to action \"%s\" %s"%(action_name, str(diff_dict))
+                    
+#                        arg_dict = kwargs.items() + [("name", action_name)] + parameters.items()
+#                        if board is not None:
+#                            arg_dict += [("board", board)]
+#                        arg_dict = dict(arg_dict)
+#                        
+#                        if len(args) == len(variables.keys()):
+#                            arg_dict += zip(variables.keys(), args)
+#                        elif len(kwargs.keys()) != len(variables.keys()):
+#                            print "ERROR: wrong arguments call to action \"%s\" (arguments to be given are \"%s\")"%(action_name, str(variables))
 
-                        arg_dict = dict(arg_dict)
+                        
                         if var_formats is not None:
                             for var_form in var_formats:
                                 fmt = self.system.parser.fmt_to_type(var_formats[var_form])
                                 arg_dict[var_form] = fmt(arg_dict[var_form])
+                        
                         return action(self.system, **arg_dict)
 
                     handler = new_handler
 
-                if issubclass(action, lib_ramp.Ramp):
+                if issubclass(action, (lib_ramp.Ramp, lib_ttlpulse.Pulse)):
                     selected_list = self.ramps
                     subprg = True
                 else:
