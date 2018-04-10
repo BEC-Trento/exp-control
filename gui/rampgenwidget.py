@@ -79,6 +79,10 @@ class RampGenDialog(QtGui.QDialog, Ui_RampGenDialog):
         self.blockEditComboBox.setCurrentIndex(2)
         self.saveDir = os.path.abspath('data/evaporation')
         print(self.saveDir)
+        # modifica al volo: tfinal -> t relative after decompress
+        self.decompress_time = 43701.0
+        self.tfinalFormLabel.setText('t relative after Decompress')
+
         self.setupTable(self.table)
 
     @property
@@ -102,7 +106,7 @@ class RampGenDialog(QtGui.QDialog, Ui_RampGenDialog):
     @property
     def tfinal(self):
         try:
-            tf = self.times[-1]
+            tf = round(self.times[-1] - self.decompress_time + 1)
         except IndexError as e:
             print(e)
             tf = np.nan
