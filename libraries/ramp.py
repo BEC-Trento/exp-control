@@ -20,7 +20,9 @@
 #pylint: disable-msg=E0611
 
 import program as lib_program
-from numpy import linspace, arange
+from numpy import linspace, arange, zeros
+from asteval import Interpreter
+
 
 class Ramp(object):
     def __init__(self, system, name, comment=""):
@@ -107,10 +109,87 @@ class LinearRamp(Ramp):
             print "ERROR: wrong call for \"%s\" with name \"%s\""%(str(type(self)), self.name)
 
         for tval, xval in zip(t_ramp, x_ramp):
-            act_args = self.act_parameters.items()
+            act_args = self.act_parameters.copy()
             if self.act_var_name is not None:
-                act_args += [(self.act_var_name, xval)]
-            act_args = dict(act_args)
+                act_args.update({self.act_var_name: xval})
+            program.add(self.system.set_time(tval), self.act_name, **act_args)
+
+        return program
+        
+
+class FunctionRamp(Ramp):
+    def __init__(self, system, name="", comment="",
+                 act_name="", act_var_name=None, act_parameters=None,
+                 start_t=None, stop_t=None, step_t=None, n_points=None,
+                 func=None, func_args=None
+                 ):
+
+        super(FunctionRamp, self).__init__(system, name, comment)
+
+        if start_t is not None:
+            start_t = float(start_t)
+        self.start_t = start_t
+        if stop_t is not None:
+            stop_t = float(stop_t)
+        self.stop_t = stop_t
+        if step_t is not None:
+            step_t = float(step_t)
+        self.step_t = step_t
+        if func is not None:
+            self.func = str(func)
+        else:
+            self.func = 't'
+        if func_args is not None:
+            self.func_args = str(func_args)
+        else:
+            self.func_args = ''
+
+        self.act_name = str(act_name)
+        if act_var_name is not None:
+            act_var_name = str(act_var_name)
+        self.act_var_name = act_var_name
+        if act_parameters is not None:
+            self.act_parameters = dict(act_parameters)
+        else:
+            self.act_parameters = dict()
+
+        self.n_points = n_points
+        
+        self.aeval = Interpreter()
+        func_code = "def func(t, {:s}):\n\treturn {:s}".format(self.func_args, self.func)
+        self.aeval(func_code)
+            
+            
+
+    def get_prg(self):
+
+        program = lib_program.Program(system=self.system, name=self.name, comment=self.comment)
+
+
+        if None not in [self.start_t, self.stop_t, self.n_points]:
+            t_ramp = linspace(self.start_t, self.stop_t, self.n_points)
+        elif None not in [self.start_t, self.step_t]:
+            if self.n_points is not None:
+                n_points = self.n_points
+            elif self.stop_t is not None:
+                n_points = int((self.stop_t-self.start_t)/self.step_t)
+            else:
+                n_points = 0
+                print "ERROR: wrong call for \"%s\" with name \"%s\""%(str(type(self)), self.name)
+
+            t_ramp = arange(self.start_t, self.step_t*n_points, self.step_t)
+        else:
+            print "ERROR: wrong call for \"%s\" with name \"%s\""%(str(type(self)), self.name)
+            t_ramp = zeros((1,), dtype=float)
+            
+
+        for tval in t_ramp:
+            #the function reads the TRUE phisical (relative) time, in seconds
+            code = "func({:g}, **dict({:s}))".format(tval * self.system._time_multiplier, self.func_args)
+            xval = self.aeval(code)
+            act_args = self.act_parameters.copy()
+            if self.act_var_name is not None:
+                act_args.update({self.act_var_name: xval})
             program.add(self.system.set_time(tval), self.act_name, **act_args)
 
         return program
