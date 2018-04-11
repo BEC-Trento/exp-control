@@ -135,6 +135,8 @@ class FunctionRamp(Ramp):
         if step_t is not None:
             step_t = float(step_t)
         self.step_t = step_t
+        self.n_points = n_points
+        
         if func is not None:
             self.func = str(func)
         else:
@@ -143,6 +145,15 @@ class FunctionRamp(Ramp):
             self.func_args = str(func_args)
         else:
             self.func_args = ''
+        extra_args = []
+        for attr in ['start_t', 'stop_t', 'step_t',]:
+            vattr = getattr(self, attr)
+            if vattr is not None:
+                extra_args.append("{:s} = {:g}".format(attr, vattr*self.system._time_multiplier))
+        vattr = getattr(self, 'n_points')
+        if vattr is not None:
+            extra_args.append("{:s} = {:g}".format('n_points', vattr))
+        self.func_args = self.func_args + ', ' + ', '.join(extra_args)
 
         self.act_name = str(act_name)
         if act_var_name is not None:
@@ -153,7 +164,7 @@ class FunctionRamp(Ramp):
         else:
             self.act_parameters = dict()
 
-        self.n_points = n_points
+        
         
         self.aeval = Interpreter()
         func_code = "def func(t, {:s}):\n\treturn {:s}".format(self.func_args, self.func)

@@ -121,7 +121,7 @@ class Parser(object):
                 print "ERROR: skipping line '%s'"%line
             else:
                 line = m0.group(1)
-                print 'LINE: ', line
+                #print 'LINE: ', line
 
                 #split the line into prg.add function arguments
                 #(consider the first grade of parenthesis)
@@ -161,14 +161,14 @@ class Parser(object):
                     if len(line) > 2:
                         #parse arguments other than time and action name
                         for lin in line[2:]:
-                            print lin
+                            #print lin
                             #match functions arguments
                             m_fun = re.match("\s*functions\s*=\s*(.*)", lin)
                             if m_fun is None:
                                 #parse if not functions, split key and value
                                 #ar = re.split("\s*=\s*", lin)
                                 ar = lin.split('=', 1)
-                                print(ar)
+                                #print(ar)
                                 if len(ar) == 2:
                                     #if named argument
                                     if ar[0] == "enable":
