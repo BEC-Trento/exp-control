@@ -2,11 +2,11 @@
 Software interface for the FPGA-based digital control system,
 used in the atomic physics experiment of the ultracold gases laboratory at the University of Trento - Italy (BEC research group).
 
-https://github.com/simondona/exp-control-bec-tn
+https://github.com/BEC-Trento/exp-control
 
 
 ## Install (Debian/Ubuntu)
-Install `python2.7`, `numpy`, `matplotlib`, and `pyqt4`:
+Install `python2.7`, `numpy`, `matplotlib`, and `PySide`:
 ```
 sudo apt-get install python-numpy python-matplotlib python-pyside
 ```
@@ -33,7 +33,7 @@ sudo adduser username dialout
 
 Clone the repository:
 ```
-git clone https://github.com/carmelom/exp-control.git
+git clone https://github.com/BEC-Trento/exp-control.git
 ```
 
 If needed set the `exp-control.py` as executable:
@@ -57,8 +57,8 @@ s.set_program("test")
 s.send_program_and_run()
 ```
 
-Use always the `master` branch (`develop` is just for testing new and unstable code).
-If needed change the branch:
+Use always the `master` branch (`develop` and `feature-*` branches are organized according to the [Gitflow](https://www.atlassian.com/git/tutorials/comparing-workflows/gitflow-workflow) scheme).
+Switch to the `master` branch if needed:
 ```
 git checkout master
 ```
@@ -90,8 +90,9 @@ git stash pop
 The roadmap of future versions can be found in the wiki: https://github.com/simondona/exp-control-bec-tn/wiki
 
 
-## Author
+## Author(s)
 * Simone Donadello: <simon.dona.dev@gmail.com> (https://github.com/simondona/)
+* Carmelo Mordini: <carmelo.mordini@unitn.it> (https://github.com/carmelom/)
 
 
 ## License
