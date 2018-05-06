@@ -40,3 +40,13 @@ class DefaultProgSettings(object):
                 setattr(self, key, val)
         except IOError:
             print "WARNING: no config file '" + self.config_fname + "' found"
+        except ValueError:
+            print "ERROR: .program.conf file is not readable. Do you want to reset it? [y/n]"
+            response = raw_input()
+            if response in ['y', 'Y', 'yes', 'YES']:
+                self.save_settings()
+                pass
+
+            else:
+                print "Nothing done."
+                quit()

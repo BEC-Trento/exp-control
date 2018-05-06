@@ -25,6 +25,7 @@ import gui.programtable
 import gui.actionstree
 
 import PySide.QtGui as QtGui
+from PySide.QtCore import Qt
 
 class ProgramEditWidget(QtGui.QWidget, object):
 
@@ -133,6 +134,13 @@ class ProgramEditWidget(QtGui.QWidget, object):
         comment_button.clicked.connect(self.on_set_comment)
         line_controls_layout.addWidget(comment_button)
 
+# Search of actions in the displayed table
+        search_line = QtGui.QLineEdit()
+        search_line.textEdited.connect(self.on_search_event)
+        search_line.setPlaceholderText("Search current table...")
+        search_line.setToolTip("Search this program everywhere: times, actions, values...")
+        line_controls_layout.addWidget(search_line)
+
         center_layout.addWidget(line_controls_widget)
 
         self.setLayout(main_layout)
@@ -149,15 +157,15 @@ class ProgramEditWidget(QtGui.QWidget, object):
 
     def set_title(self, title=None, comment=None):
         if title is not None and title != "":
-            self.title_label.setText("Program: \"%s\""%title)
-            self.title_label.setToolTip("current program: \"%s\""%title)
+            self.title_label.setText("Program: \"%s\"" % title)
+            self.title_label.setToolTip("current program: \"%s\"" % title)
         else:
             self.title_label.setText("New program")
             self.title_label.setToolTip("new program loaded")
 
         if comment is not None and comment != "":
-            self.comment_label.setText("%s"%comment)
-            self.comment_label.setToolTip("comment: \"%s\""%comment)
+            self.comment_label.setText("%s" % comment)
+            self.comment_label.setToolTip("comment: \"%s\"" % comment)
         else:
             self.comment_label.setText("")
             self.comment_label.setToolTip("")
@@ -186,3 +194,13 @@ class ProgramEditWidget(QtGui.QWidget, object):
     def on_relative_time(self, evt=None):
         self.table.relative_view = bool(self.relative_box.isChecked())
         self.table.set_data()
+
+    def on_search_event(self, text):
+        #  Selects the cells that contain the search string
+        self.table.clearSelection()
+
+        if len(text) > 0:
+            found_items = self.table.findItems(text, Qt.MatchContains)
+            for item in found_items:
+                if item:
+                    item.setSelected(True)

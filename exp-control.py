@@ -29,9 +29,7 @@ matplotlib.use("Qt4Agg", force=True)
 from PySide import QtCore
 QtCore.pyqtSignal = QtCore.Signal
 QtCore.pyqtSlot = QtCore.Slot
-
 import PySide.QtGui as QtGui
-
 from libraries.system import System
 import gui.programwindow
 from gui.constants import PRG_NAME, PRG_VERSION

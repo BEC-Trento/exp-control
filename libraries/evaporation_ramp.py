@@ -26,32 +26,38 @@ SUB_NAME = 'Evaporation Ramp.sub'
 DDS_PATH = "copyramp"
 WRITETABLE = os.path.join(DDS_PATH, 'exec_writetable')
 
+
 class EvaporationRampGen(object):
     def __init__(self, system):
         self.system = system
         self.act_name = ACT_NAME
         self.sub_name = SUB_NAME
-        self.act_dict = self.system.action_list.get_dict(self.act_name).copy()
-        self.sub_dict = self.system.action_list.get_dict(self.sub_name).copy()
-        
+# TODO  no check for existence of these actions is done, temporaneo hack qui
+        if self.system.action_list.get_dict(self.act_name) is not None:
+            self.act_dict = self.system.action_list.get_dict(self.act_name).copy()
+            self.sub_dict = self.system.action_list.get_dict(self.sub_name).copy()
+        else:
+            self.act_dict = dict()
+            self.act_dict = dict()
+            
     def build_prg_list(self, times,):
-        prg_list = []
+        prg_list = []   
         for j, t in enumerate(times):
             d0 = self.act_dict.copy()
             d0['time'] = self.system.set_time(t)
             d0['vars'] = {'n_lut': j}
             prg_list.append(d0)
         return prg_list
-    
+
     def write_prg(self, prg_list):
         self.system.parser.write_program_file(
-#                prg_name='Evaporation Ramp new writer',# for testing purpose
+#               prg_name='Evaporation Ramp new writer',# for testing purpose
                 prg_name=self.sub_name,
                 prg_list=prg_list,
                 categories=self.sub_dict['categories'],
                 prg_comment=self.sub_dict['comment'],
                 cmd_str=self.sub_dict['cmd'],)
-        
+
     def build_xml_list(self, freqs, amps):
         dds = ET.Element("ad9958s")
         xml_list = []
@@ -63,7 +69,7 @@ class EvaporationRampGen(object):
             ET.SubElement(ch0, 'am').text = '{:.0f}'.format(a)
             xml_list.append(ET.tostring(elem).decode('ascii'))
         return xml_list
-    
+
     def write_xml(self, xml_list):
         xml_name = os.path.join(DDS_PATH, self.act_name + '.xml')
         print("writing '%s'"%xml_name)
@@ -74,8 +80,7 @@ class EvaporationRampGen(object):
                 f.write('  '+ e +'\n')
             f.write('</ad9958s>')
         return xml_name
-        
-        
+
     def write_out(self, times, freqs, amps): #writes subroutine, .xml, and copyramp on the DDS
         print('Writing subroutine')
         prg = self.build_prg_list(times)

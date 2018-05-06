@@ -89,10 +89,11 @@ class AvaiableActions(QtGui.QTableWidget, object):
             check_y1 = QtGui.QCheckBox()
             check_y2 = QtGui.QCheckBox()
             self.setCellWidget(n_row, 1, check_y1)
-            check_y1.stateChanged.connect(partial(self.on_state_changed,
+            check_y1.stateChanged.connect(lambda: self.on_state_changed(
                                                   n_row=n_row, n_col=1))
+            
             self.setCellWidget(n_row, 2, check_y2)
-            check_y2.stateChanged.connect(partial(self.on_state_changed,
+            check_y2.stateChanged.connect(lambda: self.on_state_changed(
                                                   n_row=n_row, n_col=2))
 
             combo_col = ColorCombo()
@@ -100,12 +101,12 @@ class AvaiableActions(QtGui.QTableWidget, object):
             col = self.acts[row]["plot_col"]
             combo_col.setCurrentIndex([cl[0] for cl in ColorCombo.colors].index(col))
             self.setCellWidget(n_row, 3, combo_col)
-            combo_col.currentIndexChanged.connect(partial(self.on_state_changed,
+            combo_col.currentIndexChanged.connect(lambda: self.on_state_changed(
                                                           n_row=n_row, n_col=3))
             sty = self.acts[row]["plot_sty"]
             combo_sty.setCurrentIndex(StyleCombo.styles.index(sty))
             self.setCellWidget(n_row, 4, combo_sty)
-            combo_sty.currentIndexChanged.connect(partial(self.on_state_changed,
+            combo_sty.currentIndexChanged.connect(lambda: self.on_state_changed(
                                                           n_row=n_row, n_col=4))
 
     def on_state_changed(self, n_row, n_col):
@@ -159,7 +160,7 @@ class PlotActionsDialog(QtGui.QDialog, object):
 
         self.table = table
         self.actions = []
-        self.avaiable_acts = dict()
+        self.available_acts = dict()
 
         layout = QtGui.QGridLayout()
         self.setLayout(layout)
@@ -212,10 +213,10 @@ class PlotActionsDialog(QtGui.QDialog, object):
                                     enable_parent=True,
                                     extended=False)
         self.actions += [act for act in acts2 if act["is_subprg"]]
-        avaiable_acts = dict()
+        available_acts = dict()
         for act in self.actions:
             name = act["name"]
-            if name not in avaiable_acts:
+            if name not in available_acts:
                 col = ColorCombo.colors[hash(name)%len(ColorCombo.colors)][0]
                 sty = StyleCombo.styles[(hash(name)+13)%len(StyleCombo.styles)]
                 if act["is_subprg"]:
@@ -223,7 +224,7 @@ class PlotActionsDialog(QtGui.QDialog, object):
                                                                   **act["vars"])
                 else:
                     act_time = None
-                avaiable_acts[name] = dict(plot_y1=False,
+                available_acts[name] = dict(plot_y1=False,
                                            plot_y2=False,
                                            plot_col=col,
                                            plot_sty=sty,
@@ -234,11 +235,11 @@ class PlotActionsDialog(QtGui.QDialog, object):
                     var = var.keys()[0]
                 else:
                     var = None
-                avaiable_acts[name]["var"] = var
+                available_acts[name]["var"] = var
 
-        if avaiable_acts.keys() != self.avaiable_acts.keys():
-            self.avaiable_acts = avaiable_acts
-            self.actions_table.set_acts(self.avaiable_acts)
+        if available_acts.keys() != self.available_acts.keys():
+            self.available_acts = available_acts
+            self.actions_table.set_acts(self.available_acts)
         self.plot()
 
     def plot(self):
@@ -250,8 +251,8 @@ class PlotActionsDialog(QtGui.QDialog, object):
         self.plot1.axis2.ticklabel_format(useOffset=False)
         self.plot2.axis.ticklabel_format(useOffset=False)
 
-        for act_name in sorted(self.avaiable_acts.keys()):
-            act = self.avaiable_acts[act_name]
+        for act_name in sorted(self.available_acts.keys()):
+            act = self.available_acts[act_name]
             if act["plot_y1"] or act["plot_y2"]:
                 var_name = act["var"]
                 x = []

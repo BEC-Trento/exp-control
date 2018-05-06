@@ -118,14 +118,18 @@ class ProgramTable(QtGui.QTableWidget, object):
         self.dialogs_changed.emit(self.count_dialogs)
 
     def set_data(self, prg_name=None, new_prg=False, ramp_vars=None):
-        #set the program data if given
+        # set the program data if given
         if prg_name is not None or new_prg:
             self.prg_name = prg_name
-            if ramp_vars == None:
+            if ramp_vars is None:
                 ramp_vars = dict()
             self.ramp_vars = ramp_vars
             if self.system.action_list.get_dict(prg_name) is not None:
-                self.prg_comment = self.system.action_list.get_dict(prg_name)["comment"]
+                try:
+                    self.prg_comment = self.system.action_list.get_dict(prg_name)["comment"]
+                except KeyError:
+                    # TODO: Find a fix when there is no program opened.
+                    print "prgname: "+str(prg_name)
             else:
                 self.prg_comment = None
 
@@ -621,3 +625,8 @@ class ProgramTable(QtGui.QTableWidget, object):
     def set_comment(self, comment):
         self.prg_comment = comment
         self.program_opened.emit(self.prg_name, self.prg_comment)
+
+"""
+    def search_action(self, string):
+        found = self.findItems(string, PySide.QtCore.Qt.MatchFlags.MatchContains)
+"""

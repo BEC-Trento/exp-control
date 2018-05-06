@@ -37,7 +37,6 @@ If needed set the `exp-control.py` as executable:
 chmod +x exp-control.py
 ```
 
-
 ## Usage
 From the `master` branch, launch the GUI program:
 ```
