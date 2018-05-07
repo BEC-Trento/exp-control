@@ -121,10 +121,11 @@ class Parser(object):
                 print "ERROR: skipping line '%s'"%line
             else:
                 line = m0.group(1)
+                #print 'LINE: ', line
 
                 #split the line into prg.add function arguments
                 #(consider the first grade of parenthesis)
-                par_count = spar_count = 0
+                par_count = spar_count = open_str = 0
                 part_line = ""
                 split_line = []
                 for ch in line:
@@ -132,7 +133,9 @@ class Parser(object):
                     elif ch == ")": par_count -= 1
                     elif ch == "[": spar_count += 1
                     elif ch == "]": spar_count -= 1
-                    if ch == "," and par_count == 0  and spar_count == 0:
+                    elif ch == "\"" and not open_str: open_str = 1
+                    elif ch == "\"" and open_str: open_str = 0
+                    if ch == "," and par_count == 0  and spar_count == 0 and open_str == 0:
                         split_line.append(part_line.strip())
                         part_line = ""
                     else:
@@ -141,7 +144,6 @@ class Parser(object):
 
                 #the line is now splitted into arguments
                 line = split_line
-
                 #at least time and action must be present
                 if not len(line) >= 2:
                     print "ERROR: skipping line '%s'"%line
@@ -159,11 +161,14 @@ class Parser(object):
                     if len(line) > 2:
                         #parse arguments other than time and action name
                         for lin in line[2:]:
+                            #print lin
                             #match functions arguments
                             m_fun = re.match("\s*functions\s*=\s*(.*)", lin)
                             if m_fun is None:
                                 #parse if not functions, split key and value
-                                ar = re.split("\s*=\s*", lin)
+                                #ar = re.split("\s*=\s*", lin)
+                                ar = lin.split('=', 1)
+                                #print(ar)
                                 if len(ar) == 2:
                                     #if named argument
                                     if ar[0] == "enable":
@@ -226,8 +231,10 @@ class Parser(object):
                                         fmt = str
                                     if fmt is int and "." in value:
                                         value = float(value)
-
-                                    new_line["vars"][key] = fmt(value)
+                                    _val = fmt(value)
+                                    if isinstance(_val, str) and "\"" in _val:
+                                        _val = _val.strip("\"")
+                                    new_line["vars"][key] = _val
 
                             for key in functions:
                                 new_line["functions"][key] = functions[key]
@@ -260,6 +267,8 @@ class Parser(object):
                 for var_n in item["vars"]:
                     if var_n in item["var_formats"]:
                         type_fmt = item["var_formats"][var_n]
+                        if type_fmt == "%s":
+                            type_fmt = "\"%s\""
                     else:
                         type_fmt = "%s"
                     if var_n != "action_name":
