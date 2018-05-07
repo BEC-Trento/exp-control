@@ -162,18 +162,19 @@ class DdsAction(DataAction):
         return data
 
 class AnalogAction(DataAction):
-    def __init__(self, system, board, value=None, bipolar=True, name="", comment=""):
+    def __init__(self, system, board, value=None, scale=1.0, offset=0, bipolar=True, name="", comment=""):
         super(AnalogAction, self).__init__(system, board, name, comment)
-
+        
+        self.scale = scale
+        self.offset = offset
         if value is not None:
-            value = float(value)
-        self.value = value
+            self.value = value
 
         self.bipolar = bool(bipolar)
 
     def do_action(self):
         if self.value is not None:
-            data = self.board.set_value(self.value)
+            data = self.board.set_value(self.scale*self.value + self.offset)
         else:
             data = 0
             print "WARNING: call to analog action \"%s\" is not implemented, data is initialized to %d"%(self.name, data)

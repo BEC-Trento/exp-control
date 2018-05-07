@@ -70,7 +70,8 @@ class ProgramOpenDialog(QtGui.QDialog, object):
         find_text.setFocus()
         self.setAttribute(QtCore.Qt.WA_DeleteOnClose)
 
-        self.resize(300, 400)
+        self.resize(350, 466)
+
 
     def on_filter_actions(self, text):
         self.tree.update_actions(force_init=False, force_new_tree=False,
