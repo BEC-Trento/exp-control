@@ -43,7 +43,7 @@ class System(object):
 
     def __init__(self, external_trigger=False):
         print "Experiment Control"
-        print "https://github.com/simondona/exp-control-bec-tn"
+        print "https://github.com/BEC-Trento/exp-control"
         print "author: Simone Donadello - license: GNU GPLv3"
         print
 

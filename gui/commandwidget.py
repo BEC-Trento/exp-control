@@ -57,7 +57,7 @@ class VariableForm(QtGui.QWidget):
             return 1
     @property
     def npoints(self):
-        return max(0, (self.stop - self.start)//abs(self.step))
+        return max(0, int((self.stop-1 - self.start)/(self.step))+1)
     
     def write_npoints(self):
         self.npoints_value_label.setText("(%d)"%self.npoints)

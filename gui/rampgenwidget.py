@@ -79,9 +79,6 @@ class RampGenDialog(QtGui.QDialog, Ui_RampGenDialog):
         self.blockEditComboBox.setCurrentIndex(2)
         self.saveDir = os.path.abspath('data/evaporation')
         print(self.saveDir)
-        # modifica al volo: tfinal -> t relative after decompress
-        self.decompress_time = 43701.0
-        self.tfinalFormLabel.setText('t relative after Decompress')
 
         self.setupTable(self.table)
 
@@ -97,6 +94,10 @@ class RampGenDialog(QtGui.QDialog, Ui_RampGenDialog):
     @property
     def fcut(self):
         return self.fcutDoubleSpinBox.value()
+        
+    @property
+    def decompress_time(self):
+        return self.tdecompressDoubleSpinBox.value()
 
     @property
     def npoints(self):
@@ -405,7 +406,7 @@ class RampGenDialog(QtGui.QDialog, Ui_RampGenDialog):
         for j in range(self.table.rowCount()):
             row = self.readTableRow(j)
             A.append(np.asarray([1,] + [row[k] for k in headers]))
-        np.savetxt(path, A, fmt=['%d']*2 + ['%.2f']*4 + ['%d']*2)
+        np.savetxt(path, A, fmt=['%d']*2 + ['%.4f']*4 + ['%d']*2)
         print('saved ramp as %s'%path)
 
     def on_write_out(self,):
@@ -422,6 +423,7 @@ class RampGenDialog(QtGui.QDialog, Ui_RampGenDialog):
         self.savePushButton.clicked.connect(self.save_to_txt)
         self.saveAsPushButton.clicked.connect(self.save_as)
         self.fcutDoubleSpinBox.valueChanged.connect(self.updateRamps)
+        self.tdecompressDoubleSpinBox.valueChanged.connect(self.updateRamps)
         self.blockEditComboBox.currentIndexChanged.connect(self.on_block_edit_changed)
         self.writeOutPushButton.clicked.connect(self.on_write_out)
 
