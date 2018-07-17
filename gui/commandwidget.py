@@ -179,6 +179,20 @@ class VariablesWidget(QtGui.QWidget):
         self.wait_spinBox.setValue(100)
         layout.addWidget(wait_widg)
         
+        line = QtGui.QFrame()
+        line.setFrameShape(QtGui.QFrame.HLine)
+        line.setFrameShadow(QtGui.QFrame.Sunken)
+        layout.addWidget(line)
+        
+        vlabel = QtGui.QLabel("Current variables")
+        vlabel.setFixedHeight(self._iconSize.height())
+        layout.addWidget(vlabel)
+        
+        self.variablesTableWidget = QtGui.QTableWidget(1,2,)
+        layout.addWidget(self.variablesTableWidget)
+        self.variablesTableWidget.setHorizontalHeaderLabels(['key', 'value'])
+        self.variablesTableWidget.horizontalHeader().setResizeMode(QtGui.QHeaderView.Stretch);
+        
         layout.addStretch()
         
         
@@ -200,7 +214,19 @@ class VariablesWidget(QtGui.QWidget):
         self.variables.remove(var)
         if self.n_vars <= 1:
             self.oper_combo.setVisible(False)
-        
+            
+    def write_variables_table(self, vars_dict):
+        self.variablesTableWidget.setRowCount(len(vars_dict))
+        for j, (key, value) in enumerate(sorted(vars_dict.items())):
+            kItem = QtGui.QTableWidgetItem(key)
+            kItem.setFlags(QtCore.Qt.ItemIsEditable)
+            kItem.setForeground(QtCore.Qt.black)
+            self.variablesTableWidget.setItem(j, 0, kItem)
+            vItem = QtGui.QTableWidgetItem('%g'%value)
+            vItem.setFlags(QtCore.Qt.ItemIsEditable)
+            vItem.setForeground(QtCore.Qt.black)
+            self.variablesTableWidget.setItem(j, 1, vItem)
+                    
         
         
 class CommandWidget(QtGui.QWidget):
@@ -343,6 +369,9 @@ class CommandWidget(QtGui.QWidget):
         prog += "if j == len(iters):\n" + " "*4 + "cmd.stop()\n"
         return prog
         
+    def update_gui_vars(self, vars_dict):
+        print "Update gui vars with dict", vars_dict
+        self.vars_tab.write_variables_table(vars_dict)
         
         
         

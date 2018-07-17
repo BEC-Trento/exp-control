@@ -24,6 +24,7 @@ class SysCommand(object):
         self.running = False
         self._sleep_event = threading.Event()
         self._thread = None
+        self._update_gui_vars = None
 
     def sleep(self, time=100):
         if self.running:
@@ -89,4 +90,5 @@ class SysCommand(object):
 
     def set_var(self, name, value):
         self._system.variables[name] = value
+        self._update_gui_vars(self._system.variables) # aliased to programTable.cmd_widget.update_gui_vars
         return value
