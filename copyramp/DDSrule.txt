@@ -1,0 +1,31 @@
+# Rule for writing table to DDS through USB (PC)
+SUBSYSTEM=="usb", ENV{DEVTYPE}=="usb_device", ATTR{idVendor}=="a5a5", ATTR{idProduct}=="9958", GROUPS="dialout", MODE="0666"
+
+# Rule for writing table to DDS through USB (raspberry)
+SUBSYSTEM=="usb", ENV{DEVTYPE}=="usb_device", SYSFS{idVendor}=="a5a5", SYSFS{idProduct}=="9958", GROUPS="dialout", MODE="0666"
+
+#run lsusb, if the DDS shows as:
+#    Bus 001 Device 016: ID a5a5:9958  
+
+#then the device is /dev/bus/usb/001/016
+#you can get the device created with:
+#    udevadm info -q path /dev/bus/usb/001/016
+
+#and it should return something like:
+#    /devices/pci0000:00/0000:00:14.0/usb1/1-4/1-4.4/1-4.4.2
+
+#you can test if the udev rule is applying correctly by running:
+#    udevadm test --action=add `udevadm info -q path /dev/bus/usb/001/016`
+
+#Example of NOT WORKING RULE
+PROGRAM 'mtp-probe /sys/devices/pci0000:00/0000:00:14.0/usb1/1-4/1-4.4/1-4.4.2 1 16' /lib/udev/rules.d/69-libmtp.rules:2283
+starting 'mtp-probe /sys/devices/pci0000:00/0000:00:14.0/usb1/1-4/1-4.4/1-4.4.2 1 16'
+'mtp-probe /sys/devices/pci0000:00/0000:00:14.0/usb1/1-4/1-4.4/1-4.4.2 1 16'(out) '0'
+Process 'mtp-probe /sys/devices/pci0000:00/0000:00:14.0/usb1/1-4/1-4.4/1-4.4.2 1 16' succeeded.
+GROUP 20 /etc/udev/rules.d/99-ddsrule.rules:2
+MODE 0666 /etc/udev/rules.d/99-ddsrule.rules:2
+handling device node '/dev/bus/usb/001/016', devnum=c189:15, mode=0666, uid=0, gid=20
+set permissions /dev/bus/usb/001/016, 020666, uid=0, gid=20
+setting mode of /dev/bus/usb/001/016 to 020666 failed: Operation not permitted
+setting owner of /dev/bus/usb/001/016 to uid=0, gid=20 failed: Operation not permitted
+
