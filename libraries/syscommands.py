@@ -84,7 +84,7 @@ class SysCommand(object):
 
     def get_var(self, name):
         if name not in self._system.variables.keys():
-            self._system.variables[name] = 0
+            self.set_var(name, 0)
             print "WARNING: program variable \"%s\" not found in system, initialized with %d"%(name, self._system.variables[name])
         return self._system.variables[name]
 

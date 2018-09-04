@@ -17,6 +17,9 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 import os
+import json
+variables_dict_path = '/home/stronzio/c-siscam-img/current-variables.txt'
+
 icons_path = os.path.join(os.getcwd(), 'gui', 'icons')
 from PySide import QtGui, QtCore
 
@@ -372,7 +375,8 @@ class CommandWidget(QtGui.QWidget):
     def update_gui_vars(self, vars_dict):
         print "Update gui vars with dict", vars_dict
         self.vars_tab.write_variables_table(vars_dict)
-        
+        with open(variables_dict_path, "wb") as fid:
+                json.dump(vars_dict, fid)
         
         
         
