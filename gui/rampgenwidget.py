@@ -30,22 +30,7 @@ from matplotlib.backends.backend_qt4agg import (
 from PySide import QtGui, QtCore
 
 from .ui.rampgendialog_ui import Ui_RampGenDialog
-
-class QPushButtonIndexed(QtGui.QPushButton):
-    indexSignal = QtCore.Signal(int)
-    nextIndexSignal = QtCore.Signal(int)
-    def __init__(self, index, *args, **kwargs):
-        super(QPushButtonIndexed, self).__init__(*args, **kwargs)
-        self.index = index
-        self.clicked.connect(self.emit_index)
-        self.clicked.connect(self.emit_next_index)
-
-    def emit_index(self):
-        self.indexSignal.emit(self.index)
-    def emit_next_index(self):
-        self.nextIndexSignal.emit(self.index + 1)
-
-
+from .indexedbuttons import QPushButtonIndexed
 
 class RampGenDialog(QtGui.QDialog, Ui_RampGenDialog):
     def __init__(self, parent, system, *args, **kwargs):

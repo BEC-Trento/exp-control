@@ -24,7 +24,7 @@ class SysCommand(object):
         self.running = False
         self._sleep_event = threading.Event()
         self._thread = None
-        self._update_gui_vars = None
+        self._update_gui_callbacks = []
 
     def sleep(self, time=100):
         if self.running:
@@ -83,12 +83,17 @@ class SysCommand(object):
             self.running = False
 
     def get_var(self, name):
-        if name not in self._system.variables.keys():
+    ### Better ask forgiveness than permission
+        try:
+            return self._system.variables[name]
+        except KeyError:
             self.set_var(name, 0)
             print "WARNING: program variable \"%s\" not found in system, initialized with %d"%(name, self._system.variables[name])
-        return self._system.variables[name]
+            return self._system.variables[name]
 
     def set_var(self, name, value):
         self._system.variables[name] = value
-        self._update_gui_vars(self._system.variables) # aliased to programTable.cmd_widget.update_gui_vars
+        for fun in self._update_gui_callbacks:
+            fun(name, value)
         return value
+        

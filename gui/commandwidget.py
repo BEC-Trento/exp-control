@@ -24,6 +24,8 @@ icons_path = os.path.join(os.getcwd(), 'gui', 'icons')
 from PySide import QtGui, QtCore
 
 from .constants import RED, BLUE
+# deleteme
+from collections import OrderedDict
 
 
 class VariableForm(QtGui.QWidget):
@@ -112,13 +114,102 @@ class VariableForm(QtGui.QWidget):
         self.write_npoints()
         self.gridLayout.addWidget(self.npoints_value_label, 2, 3, 1, 1)
 
+class VariablesTableWidget(QtGui.QTableWidget):
+    def __init__(self, rows, columns, cmd_thread, iconSize=QtCore.QSize(36, 36), *args, **kwargs):
+        super(VariablesTableWidget, self).__init__(rows, columns, *args, **kwargs)
+        self._iconSize = iconSize
+        self.cmd_thread = cmd_thread
+        self.initUi()
+        self.variables = self.cmd_thread._system.variables
+        self.cmd_thread._update_gui_callbacks.append(self.update_gui_callback) # very dirty
+        self.itemChanged.connect(self.on_item_changed)
+        
+    def keyPressEvent(self, event):
+        if event.key() == QtCore.Qt.Key_Delete:
+            self.delRow(self.currentRow())
+        else:
+            return QtGui.QTableWidget.keyPressEvent(self, event)
+        
+    def initUi(self,):
+        self.verticalHeader().setVisible(False)
+        self.setHorizontalHeaderLabels(['key', 'value'])
+        self.horizontalHeader().setResizeMode(QtGui.QHeaderView.Stretch)
+        
+    def appendRow(self):
+        row = self.rowCount()
+        self.insertRow(row)
+        print('Line added')
+        
+    def delRow(self, row):
+        print 'deleting row %d'%row
+        try:
+            key = self.item(row, 0).text()
+            self.variables.pop(key)
+        except Exception as e:
+            # in case you are removing a row without a key or with a wrong one
+            print(e)
+        self.removeRow(row)
+        print self.variables
+        self.dump_variables()
+        
+    def on_item_changed(self, item):
+        row, col = item.row(), item.column()
+        if col == 0:
+            print 'new name added'
+            self.blockSignals(True)
+            item.setFlags(QtCore.Qt.ItemIsEditable)
+            self.blockSignals(False)
+        print 'edited item %d,%d'%(row, col)
+        try:
+            key = str(self.item(row, 0).text())
+            val = float(self.item(row, 1).text())
+            self.variables[key] = val
+        except ValueError as e:
+            print e
+        except AttributeError:
+            pass
+        print self.variables
+        self.dump_variables()
+        
+    def update_gui_callback(self, key, value):
+        # print "Update gui vars"
+        self.blockSignals(True)
+        # maybe inefficient but who cares
+        keys = [self.item(row,0).text() for row in range(self.rowCount())]
+        try:
+            row = keys.index(key)
+            print 'found key %s in row %d'%(key, row)
+            self.item(row, 1).setText(str(value))
+        except ValueError: # key is not present
+            row = self.rowCount()
+            self.appendRow()
+            item = QtGui.QTableWidgetItem()
+            item.setText(key)
+            item.setFlags(QtCore.Qt.ItemIsEditable)
+            self.setItem(row, 0, item)
+            item = QtGui.QTableWidgetItem()
+            item.setText(str(value))
+            self.setItem(row, 1, item)
+        self.blockSignals(False)
+        print self.variables
+        self.dump_variables()
+   
+    def dump_variables(self):
+        with open(variables_dict_path, "wb") as fid:
+            json.dump(self.variables, fid)
+        
+        
+        
+    
 
 
 class VariablesWidget(QtGui.QWidget):
-    def __init__(self, iconSize=QtCore.QSize(36, 36), *args, **kwargs):
+    def __init__(self, cmd_thread, iconSize=QtCore.QSize(36, 36), *args, **kwargs):
+        super(VariablesWidget, self).__init__(*args, **kwargs)
+        self.cmd_thread = cmd_thread
         self.variables = []
         self._iconSize = iconSize
-        super(VariablesWidget, self).__init__(*args, **kwargs)
+        
         self.initUi()
         
         self.add_variable()
@@ -187,15 +278,21 @@ class VariablesWidget(QtGui.QWidget):
         line.setFrameShadow(QtGui.QFrame.Sunken)
         layout.addWidget(line)
         
+        hlayout = QtGui.QHBoxLayout()
+        
         vlabel = QtGui.QLabel("Current variables")
         vlabel.setFixedHeight(self._iconSize.height())
-        layout.addWidget(vlabel)
+        hlayout.addWidget(vlabel)
         
-        self.variablesTableWidget = QtGui.QTableWidget(1,2,)
+        add_button = QtGui.QPushButton("Add")
+        hlayout.addWidget(add_button)
+        
+        layout.addLayout(hlayout)
+                
+        self.variablesTableWidget = VariablesTableWidget(0,2, cmd_thread=self.cmd_thread, iconSize=self._iconSize)
         layout.addWidget(self.variablesTableWidget)
-        self.variablesTableWidget.setHorizontalHeaderLabels(['key', 'value'])
-        self.variablesTableWidget.horizontalHeader().setResizeMode(QtGui.QHeaderView.Stretch);
         
+        add_button.clicked.connect(self.variablesTableWidget.appendRow)
         layout.addStretch()
         
         
@@ -217,26 +314,15 @@ class VariablesWidget(QtGui.QWidget):
         self.variables.remove(var)
         if self.n_vars <= 1:
             self.oper_combo.setVisible(False)
-            
-    def write_variables_table(self, vars_dict):
-        self.variablesTableWidget.setRowCount(len(vars_dict))
-        for j, (key, value) in enumerate(sorted(vars_dict.items())):
-            kItem = QtGui.QTableWidgetItem(key)
-            kItem.setFlags(QtCore.Qt.ItemIsEditable)
-            kItem.setForeground(QtCore.Qt.black)
-            self.variablesTableWidget.setItem(j, 0, kItem)
-            vItem = QtGui.QTableWidgetItem('%g'%value)
-            vItem.setFlags(QtCore.Qt.ItemIsEditable)
-            vItem.setForeground(QtCore.Qt.black)
-            self.variablesTableWidget.setItem(j, 1, vItem)
                     
         
         
 class CommandWidget(QtGui.QWidget):
-    def __init__(self, init_edit, loop_edit, parent=None, *args, **kwargs):
+    def __init__(self, cmd_thread, init_edit, loop_edit, parent=None, *args, **kwargs):
+        self.cmd_thread = cmd_thread
         self.cmd_init_edit = init_edit
         self.cmd_loop_edit = loop_edit
-        self.cmd_init_edit.setToolTip("run once at the beginning, variables prg and cmd are avaiable")
+        self.cmd_init_edit.setToolTip("run once at the beginning, variables prg and cmd are available")
         self.cmd_loop_edit.setToolTip("infinite loop, interrupt with cmd.stop()")
         super(CommandWidget, self).__init__(parent=None, *args, **kwargs)
         self.initUi()
@@ -259,7 +345,7 @@ class CommandWidget(QtGui.QWidget):
         cmd_layout = QtGui.QGridLayout(self)
         
         #commands tab
-        self.vars_tab = VariablesWidget()
+        self.vars_tab = VariablesWidget(parent=self, cmd_thread=self.cmd_thread)
         self.vars_tab.setToolTip("An user-friendly interface for cmd variables setting")
 
         code_tab = QtGui.QWidget()
@@ -354,6 +440,7 @@ class CommandWidget(QtGui.QWidget):
         
     def build_loop(self):
         prog = ""
+        prog += "print('\\n-------o-------')\n"
         variables = self.vars_tab.variables
         val_names = ["%s1"%var.name for var in variables]
         
@@ -365,29 +452,9 @@ class CommandWidget(QtGui.QWidget):
             _out += u"{:s} = %g\\n".format(var.name)
         _out += u"'%(j+1, len(iters), {:s})".format(', '.join(val_names))
         prog += _set
-        prog += "print('\\n-------o-------')\n"
+        prog += "print('\\n')\n"
         prog += "print(" + _out + ")\n"
         prog += "cmd.run(wait_end=True, add_time={:d})\n".format(self.vars_tab.wait_spinBox.value())
         prog += "j += 1\n"
         prog += "if j == len(iters):\n" + " "*4 + "cmd.stop()\n"
         return prog
-        
-    def update_gui_vars(self, vars_dict):
-        print "Update gui vars with dict", vars_dict
-        self.vars_tab.write_variables_table(vars_dict)
-        with open(variables_dict_path, "wb") as fid:
-                json.dump(vars_dict, fid)
-        
-        
-        
-        
-        
-        
-        
-        
-        
-        
-        
-        
-        
-        

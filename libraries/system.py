@@ -19,6 +19,7 @@
 #pylint: disable-msg=E1101
 
 import pylibftdi, threading
+#from collections import OrderedDict
 
 import libraries.parser as lib_parser
 import libraries.syscommands as lib_syscommand

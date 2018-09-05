@@ -52,7 +52,6 @@ class ProgramEditWindow(QtGui.QMainWindow, object):
         self.iter_num = 0
 
         self.init_ui()
-        self.system.cmd_thread._update_gui_vars = self.cmd_widget.update_gui_vars
 
     def init_ui(self):
         main_widget = QtGui.QWidget(self)
@@ -152,8 +151,9 @@ class ProgramEditWindow(QtGui.QMainWindow, object):
 
         #iterations/commands tab
         iter_cmd_tabwidget = QtGui.QTabWidget(self)
-        self.cmd_widget = gui.commandwidget.CommandWidget(init_edit=self.cmd_init_edit,
-                                                     loop_edit=self.cmd_loop_edit)
+        self.cmd_widget = gui.commandwidget.CommandWidget(cmd_thread=self.system.cmd_thread,
+                                                          init_edit=self.cmd_init_edit,
+                                                          loop_edit=self.cmd_loop_edit)
         
         #commands tab connections
         self.cmd_widget.start_cmd_button.clicked.connect(self.on_start_cmd)
