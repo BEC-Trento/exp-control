@@ -19,13 +19,18 @@
 import os, imp
 
 def action_list_init(action_list):
-
+    """
+    This function will fill the action_list by repeat calls to action_list.add()
+    with the arguments specified by files in the folder data/actions
+    """
     acts_path = "data/actions"
     for (dirpath, dirnames, filenames) in os.walk(acts_path):
         filenames.sort()
         for fname in filenames:
             fstart, fext = os.path.splitext(fname)
             if fext == ".py" and fstart != "__init__":
+                # imp.load_source?
+                # load and initialize a module implemented as a Python source file and return its module object
                 module = imp.load_source(fstart, os.path.join(dirpath, fname))
                 module.action_list_init(action_list)
 
@@ -63,7 +68,7 @@ def action_list_init(act_lst):
                 lib_action.DdsAction,
                 board="BOARD NAME",
                 parameters=dict(channel=1),
-                variables=dict(amplitude=0, frequency=0),   #if implemented, actions can have multiple varibles
+                variables=dict(amplitude=0, frequency=0),   #if implemented, actions can have multiple variables
                 var_formats=dict(amplitude="%d", frequency="%.2f"),
                 categories=["actions", "dds"],
                 comment="arbitrary comment")

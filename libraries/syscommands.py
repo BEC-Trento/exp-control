@@ -19,6 +19,9 @@
 import threading
 
 class SysCommand(object):
+    """
+    Manages a thread for sending a program independently from System.
+    """
     def __init__(self, system):
         self._system = system
         self.running = False
