@@ -26,7 +26,32 @@ import ramp as lib_ramp
 import ttlpulse as lib_ttlpulse
 
 class ActionList(object):
+    """
+    This class contains a dictionary of actions (which is NOT A LIST).
+
+    Each action is stored as a dictionary:
+    selected_list[action_name] = dict()
+    selected_list[action_name]["call"] = handler
+    selected_list[action_name]["vars"] = variables
+    selected_list[action_name]["var_formats"] = var_formats
+    selected_list[action_name]["pars"] = parameters
+    selected_list[action_name]["name"] = action_name
+    selected_list[action_name]["board"] = board
+    selected_list[action_name]["comment"] = comment
+    selected_list[action_name]["time"] = None
+    selected_list[action_name]["time_rel"] = None
+    selected_list[action_name]["is_subprg"] = subprg
+    selected_list[action_name]["enable"] = True
+    selected_list[action_name]["categories"] = categories
+    selected_list[action_name]["functions"] = functions
+    selected_list[action_name]["funct_enable"] = True
+    selected_list[action_name]["cmd"] = commands
+
+    Every action is initialized by a .py file in data/actions/
+    """
+
     def __init__(self, system=None):
+        # These are filled by init_actions.py
         self.actions = dict()
         self.programs = dict()
         self.ramps = dict()
@@ -39,6 +64,10 @@ class ActionList(object):
         return dict(self.actions.items() + self.programs.items() + self.ramps.items())
 
     def get(self, action_name, *args, **kwargs):
+        """
+        This function will run and return the handler function that is stored in
+        list[action_name]["call"]
+        """
         if action_name in self.actions.keys()+self.ramps.keys():
             return self.tot_list()[action_name]["call"](*args, **kwargs)
         elif action_name in self.programs.keys():
@@ -46,10 +75,14 @@ class ActionList(object):
             return self.tot_list()[action_name]["call"]\
                     (lib_program.Program(self.system, action_name), cmd, *args, **kwargs)
         else:
-            print "ERROR: action \"%s\" not found"%action_name
-            return None
+            print "ERROR: action \"%s\" not found, using EmptyAction"%action_name
+            return lib_action.EmptyAction(self.system)
 
     def get_cmd(self, action_name):
+        """
+        This function will run and return the function stored in
+        list[action_name]["cmd"]
+        """
         cmd = self.system.cmd_thread
         if action_name in self.programs.keys():
             act_cmd = self.tot_list()[action_name]["cmd"]
@@ -93,6 +126,9 @@ class ActionList(object):
     def add(self, action_name, action,
             board=None, parameters=None, variables=None, var_formats=None,
             handler=None, categories=None, commands=None, comment=""):
+        """
+        This function will add an action to the appropriate "list" of this istance
+        """
         action_name = str(action_name)
         if self.actions.has_key(action_name) or self.programs.has_key(action_name):
             print "ERROR: action \"" + action_name + "\" is already defined"
@@ -100,6 +136,7 @@ class ActionList(object):
         else:
             if board is not None:
                 board = self.system.board_list.get(board)
+            # ma perchè non inizializzarli già a tuple(), dict() ecc.???
             if categories is None:
                 categories = tuple()
             if parameters is None:
@@ -132,33 +169,34 @@ class ActionList(object):
                         if board is not None:
                             arg_dict.update(dict(board = board))
                         arg_dict.update(kwargs)
-                        
+
 #                        if len(kwargs.keys()) != len(variables.keys()):
 #                            diff = set(variables.keys()) - set(kwargs.keys())
 #                            diff_dict = {k: variables[k] for k in diff}
 #                            print "WARNING: default args left in call to action \"%s\" %s"%(action_name, str(diff_dict))
-                    
+
 #                        arg_dict = kwargs.items() + [("name", action_name)] + parameters.items()
 #                        if board is not None:
 #                            arg_dict += [("board", board)]
 #                        arg_dict = dict(arg_dict)
-#                        
+#
 #                        if len(args) == len(variables.keys()):
 #                            arg_dict += zip(variables.keys(), args)
 #                        elif len(kwargs.keys()) != len(variables.keys()):
 #                            print "ERROR: wrong arguments call to action \"%s\" (arguments to be given are \"%s\")"%(action_name, str(variables))
 
-                        
+
                         if var_formats is not None:
                             for var_form in var_formats:
                                 fmt = self.system.parser.fmt_to_type(var_formats[var_form])
                                 arg_dict[var_form] = fmt(arg_dict[var_form])
-                        
+
                         return action(self.system, **arg_dict)
 
                     handler = new_handler
 
                 if issubclass(action, (lib_ramp.Ramp, lib_ttlpulse.Pulse)):
+                    # Non ho parole...
                     selected_list = self.ramps
                     subprg = True
                 else:

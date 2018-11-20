@@ -59,12 +59,13 @@ class System(object):
         self.init_boards()
         self.init_actions()
 
+        #TODO: it is not clear how these variables are used
         self.variables = dict()
         self.cmd_thread = lib_syscommand.SysCommand(self)
         self.parser = lib_parser.Parser(self)
         self.evap_ramp_gen = lib_evap.EvaporationRampGen(self)
-    
-    @property    
+
+    @property
     def all_fpga_ready(self):
         status = self.get_fpga_status()
         tot_state = True
