@@ -57,6 +57,21 @@ class Instruction(object):
 
     def __ne__(self, other):
         return not self.__eq__(other)
+        
+    def __str__(self,):
+        time = self.time
+        name = self.action.name
+        return "Instruction\n\ttime {} - action {}".format(time, name)
+        
+    def _repr_dict(self):
+        attrs = self.action.__dict__.copy()
+        for k in ['command_bits', 'system']:
+            attrs.pop(k)
+        attrs['time'] = self.time
+        attrs['enable'] = self.enable,
+        attrs['board'] = self.action.board.name
+        attrs['action'] = type(self.action).__name__
+        return attrs
 
 
 class FpgaInstruction(Instruction):

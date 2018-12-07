@@ -34,6 +34,7 @@ class Program(object):
         self.system = system
 
     def add(self, time, action_str, *args, **kwargs):
+        # print "Program {} adding at time {} action {}\n\tkwargs: {}".format(self.name, time, action_str, kwargs)
         if kwargs.has_key("enable"):
             enable = bool(kwargs.pop("enable"))
         else:

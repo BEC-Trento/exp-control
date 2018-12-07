@@ -34,6 +34,9 @@ import libraries.evaporation_ramp as lib_evap
 from libraries import init_boards, init_actions, init_programs
 import os, sys
 
+import json
+last_program_path = '/home/stronzio/c-siscam-img/last-program.json'
+
 #change path
 #os.chdir(os.path.dirname(os.path.abspath(sys.argv[0])))
 
@@ -146,60 +149,60 @@ class System(object):
             print "WARNING: any program loaded"
             return 0
 
-    def check_instructions(self):
+    def check_instructions(self, instructions):
         #TODO: control if the correct main program is loaded when it is called
         problems = []
-        valid = False
-        if isinstance(self.main_program, lib_program.Program):
-            instructions = self.main_program.get_all_instructions()
+        problems_ix = []
+        valid = True
+        first_density_error = False
+        if len(instructions) >= 2:
+            if len(instructions) >= 2**14:
+                valid = False
+                problems += instructions[2**14:]
+                print "ERROR: too many instructions in the program, %d (maximum is 16k)"%len(instructions)
 
-            valid = True
-            first_density_error = False
-            if len(instructions) >= 2:
-                if len(instructions) >= 2**14:
-                    valid = False
-                    problems += instructions[2**14:]
-                    print "ERROR: too many instructions in the program, %d (maximum is 16k)"%len(instructions)
+            fifo_size = 2*(2**11)
+            prev_instr = instructions[0]
+            prev_dds_instr = None
+            for n_instr, instr in enumerate(instructions):
+                if n_instr > 0:
+                    time_delta = self._get_instr_time_diff(prev_instr, instr)
+                    if time_delta < 4:
+                        problems.append(instr)
+                        problems_ix.append(n_instr)
+                        valid = False
+                        print "ERROR: too short time between actions '%s' and '%s' at time %f (minimum is 4 clock cicles)"%(prev_instr.action.name, instr.action.name, self.get_time(instr.time))
+                    if time_delta > 2**32:
+                        valid = False
+                        problems.append(instr)
+                        problems_ix.append(n_instr)
+                        print "ERROR: too long time between actions '%s' and '%s' at time %f (maximum is ~429s)"%(prev_instr.action.name, instr.action.name, self.get_time(instr.time))
+                    prev_instr = instr
 
-                fifo_size = 2*(2**11)
-                prev_instr = instructions[0]
-                prev_dds_instr = None
-                for n_instr, instr in enumerate(instructions):
-                    if n_instr > 0:
-                        time_delta = self._get_instr_time_diff(prev_instr, instr)
-                        if time_delta < 4:
-                            problems.append(instr)
-                            valid = False
-                            print "ERROR: too short time between actions '%s' and '%s' at time %f (minimum is 4 clock cicles)"%(prev_instr.action.name, instr.action.name, self.get_time(instr.time))
-                        if time_delta > 2**32:
-                            valid = False
-                            problems.append(instr)
-                            print "ERROR: too long time between actions '%s' and '%s' at time %f (maximum is ~429s)"%(prev_instr.action.name, instr.action.name, self.get_time(instr.time))
-                        prev_instr = instr
+                if len(instructions) >= fifo_size \
+                        and n_instr in range(len(instructions) - fifo_size) \
+                        and not first_density_error:
+                    time_delta = self._get_instr_time_diff(instructions[n_instr],
+                                                           instructions[fifo_size+n_instr])
+                    if time_delta < fifo_size*20:
+                        valid = False
+                        problems += instructions[n_instr:fifo_size+n_instr]
+                        first_density_error = True
+                        print "ERROR: too dense operations starting at time %f (a rate of ~20 clock cicles per action can be sustained when the FIFO is empty)"%self.get_time(instructions[n_instr].time)
 
-                    if len(instructions) >= fifo_size \
-                            and n_instr in range(len(instructions) - fifo_size) \
-                            and not first_density_error:
-                        time_delta = self._get_instr_time_diff(instructions[n_instr],
-                                                               instructions[fifo_size+n_instr])
-                        if time_delta < fifo_size*20:
-                            valid = False
-                            problems += instructions[n_instr:fifo_size+n_instr]
-                            first_density_error = True
-                            print "ERROR: too dense operations starting at time %f (a rate of ~20 clock cicles per action can be sustained when the FIFO is empty)"%self.get_time(instructions[n_instr].time)
+                if isinstance(instr.action, lib_action.DdsAction) \
+                                        and prev_dds_instr is not None:
+                    if instr.time - prev_dds_instr.time < 0.035 \
+                            and instr.action.board == prev_dds_instr.action.board:
+                        valid = False
+                        problems.append(instr)
+                        problems_ix.append(n_instr)
+                        print "ERROR: DDS actions '%s' and '%s' at time %f are too close (a DDS action takes ~35us to complete)"%(prev_dds_instr.action.name, instr.action.name, self.get_time(instr.time))
+                    prev_dds_instr = None
+                if isinstance(instr.action, lib_action.DdsAction):
+                    prev_dds_instr = instr
 
-                    if isinstance(instr.action, lib_action.DdsAction) \
-                                            and prev_dds_instr is not None:
-                        if instr.time - prev_dds_instr.time < 0.035 \
-                                and instr.action.board == prev_dds_instr.action.board:
-                            valid = False
-                            problems.append(instr)
-                            print "ERROR: DDS actions '%s' and '%s' at time %f are too close (a DDS action takes ~35us to complete)"%(prev_dds_instr.action.name, instr.action.name, self.get_time(instr.time))
-                        prev_dds_instr = None
-                    if isinstance(instr.action, lib_action.DdsAction):
-                        prev_dds_instr = instr
-
-        return valid, problems
+        return valid, problems, problems_ix
 
     def send_program_and_run(self):
         #TODO: control if the correct main program is loaded when it is called
@@ -223,14 +226,33 @@ class System(object):
             print "WARNING: any program loaded"
         return result
 
+    def _print_instructions(self, instructions):
+        D = {}
+        D['program'] = {}
+        for j, inst in enumerate(instructions):
+            inst_d = inst._repr_dict()
+            time = self.get_time(inst_d['time'])
+            D['program'][time] = inst_d
+        D['program_name'] = self.main_program.name
+        D['variables'] = self.variables
+        # print json.dumps(D, sort_keys=True, indent=2)
+        print 'Writing {} on logfile {}'.format(self.main_program.name, last_program_path)
+        with open(last_program_path, "wb") as fid:
+            json.dump(D, fid, sort_keys=True, indent=2)
+            
     def _run_program(self):
         instrs_fpga = []
         if isinstance(self.main_program, lib_program.Program):
             instrs_prg = self.main_program.get_all_instructions()
-            valid, problems = self.check_instructions()
+
+            valid, problems, problems_ix = self.check_instructions(instrs_prg)
+            print 
             if not valid:
-                for probl in problems:
+                for ix, probl in zip(problems_ix, problems):
                     probl.parents[-1].get(probl.uuid).enable = False
+                    instrs_prg[ix].enable = False
+            else:
+                self._print_instructions(instrs_prg)
 
             prev_instr = lib_instruction.Instruction(0, lib_action.Action(self, "temp"))
             for curr_instr in instrs_prg:
