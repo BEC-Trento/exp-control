@@ -68,6 +68,7 @@ class System(object):
         self.cmd_thread = lib_syscommand.SysCommand(self)
         self.parser = lib_parser.Parser(self)
         self.evap_ramp_gen = lib_evap.EvaporationRampGen(self)
+        self.evap_ramp_name = ''
 
     @property
     def all_fpga_ready(self):
@@ -235,6 +236,7 @@ class System(object):
             time = '{:.4f}'.format(self.get_time(inst_d['time']))
             D['program'][time] = inst_d
         D['program_name'] = self.main_program.name
+        D['evaporation_ramp'] = self.evap_ramp_name
         D['variables'] = self.variables
         # print json.dumps(D, sort_keys=True, indent=2)
         print 'Writing {} on logfile {}'.format(self.main_program.name, last_program_path)

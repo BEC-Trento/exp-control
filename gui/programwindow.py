@@ -154,14 +154,14 @@ class ProgramEditWindow(QtGui.QMainWindow, object):
         self.cmd_widget = gui.commandwidget.CommandWidget(cmd_thread=self.system.cmd_thread,
                                                           init_edit=self.cmd_init_edit,
                                                           loop_edit=self.cmd_loop_edit)
-        
+
         #commands tab connections
         self.cmd_widget.start_cmd_button.clicked.connect(self.on_start_cmd)
         self.cmd_widget.stop_cmd_button.clicked.connect(self.on_stop_cmd)
         self.cmd_loop_edit.textChanged.connect(self.on_cmd_changed)
         self.cmd_init_edit.textChanged.connect(self.on_cmd_changed)
-        
-        
+
+
         iter_widget = QtGui.QWidget()
         iter_layout = QtGui.QVBoxLayout(iter_widget)
         iter_cmd_tabwidget.addTab(iter_widget, "Iterations")
@@ -250,6 +250,8 @@ class ProgramEditWindow(QtGui.QMainWindow, object):
 
         self.set_progressbar_value(0)
         self.table_widget.table.update_fpgas(init=False)
+        self.rampgendialog = gui.rampgenwidget.RampGenDialog(parent=self, system=self.system)
+        
 
     def on_copyramp(self):
 #		call('sh ./copyramp/copyramp.sh', shell=True)

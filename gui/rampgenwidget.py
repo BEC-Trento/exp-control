@@ -53,7 +53,7 @@ class RampGenDialog(QtGui.QDialog, Ui_RampGenDialog):
         self.freqs = np.empty(100,)
         self.amps  = np.empty(100,)
 
-        self._currentRampName = self.parent.settings.last_evap_ramp
+        self.currentRampName = self.parent.settings.last_evap_ramp
         self.rampNameLabel.setText(str(self._currentRampName))
         self.blockEditComboBox.addItems(['x1', 'dt', 'slope'])
         self.block_functions = {'t1': lambda row: row['t0'] + row['dt'],
@@ -74,12 +74,13 @@ class RampGenDialog(QtGui.QDialog, Ui_RampGenDialog):
     def currentRampName(self, value):
         self._currentRampName = value
         self.parent.settings.last_evap_ramp = value
+        self.system.evap_ramp_name = value
         self.rampNameLabel.setText(str(value))
 
     @property
     def fcut(self):
         return self.fcutDoubleSpinBox.value()
-        
+
     @property
     def decompress_time(self):
         return self.tdecompressDoubleSpinBox.value()
@@ -115,7 +116,7 @@ class RampGenDialog(QtGui.QDialog, Ui_RampGenDialog):
         self.writeTableRow(index, row)
         self.updateARIndices()
         self.table.blockSignals(False)
-        print('Added the {:d} row'.format(index+1))
+        # print('Added the {:d} row'.format(index+1))
 
 
     def removeRow(self, index, force=False):
@@ -361,9 +362,9 @@ class RampGenDialog(QtGui.QDialog, Ui_RampGenDialog):
         A = np.genfromtxt(fileName, usecols=(1,2,3,4,5,6,7))
         if len(A.shape) == 1:
             A = A.reshape((1,)+A.shape)
-            print A.shape
+            # print A.shape
         for index, values in enumerate(A):
-            print values
+            # print values
             row = {'omit': False,}
             row.update(dict(zip(headers, values)))
             self.insertRow(index, row)
