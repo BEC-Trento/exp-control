@@ -17,8 +17,9 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 import os
-import json
-variables_dict_path = '/home/stronzio/c-siscam-img/current-variables.txt'
+import warnings
+# import json
+# variables_dict_path = None
 
 icons_path = os.path.join(os.getcwd(), 'gui', 'icons')
 from PySide import QtGui, QtCore
@@ -30,12 +31,12 @@ from collections import OrderedDict
 
 class VariableForm(QtGui.QWidget):
     deleteMeSignal = QtCore.Signal(QtGui.QWidget)
-    
+
     def __init__(self):
         super(VariableForm, self).__init__()
         self.setupUi()
         self.del_button.clicked.connect(self.deleteMe)
-        
+
     @property
     def name(self):
         return self.name_edit.text()
@@ -63,32 +64,32 @@ class VariableForm(QtGui.QWidget):
     @property
     def npoints(self):
         return max(0, int((self.stop-1 - self.start)/(self.step))+1)
-    
+
     def write_npoints(self):
         self.npoints_value_label.setText("(%d)"%self.npoints)
         if self.npoints == 0:
             self.npoints_value_label.setStyleSheet("color: %s"%RED)
         else:
             self.npoints_value_label.setStyleSheet("")
-            
+
     def deleteMe(self):
         self.deleteMeSignal.emit(self)
-    
+
     def setupUi(self):
         self.gridLayout = QtGui.QGridLayout(self)
         self.gridLayout.setContentsMargins(-1, 6, -1, 6)
         self.gridLayout.setVerticalSpacing(0)
-        
+
         self.name_edit = QtGui.QLineEdit(self)
         self.name_edit.setText("x")
         self.gridLayout.addWidget(self.name_edit, 0, 0, 1, 2)
-        
+
         self.add_button = QtGui.QPushButton("Add")
         self.gridLayout.addWidget(self.add_button, 0, 2, 1, 1)
-        
+
         self.del_button = QtGui.QPushButton("Del")
         self.gridLayout.addWidget(self.del_button, 0, 3, 1, 1)
-        
+
         self.start_label = QtGui.QLabel("Start")
         self.gridLayout.addWidget(self.start_label, 1, 0, 1, 1)
         self.stop_label = QtGui.QLabel("Stop")
@@ -97,7 +98,7 @@ class VariableForm(QtGui.QWidget):
         self.gridLayout.addWidget(self.step_label, 1, 2, 1, 1)
         self.npoints_label = QtGui.QLabel("N points")
         self.gridLayout.addWidget(self.npoints_label, 1, 3, 1, 1)
-        
+
         self.start_lineEdit = QtGui.QLineEdit(self)
         self.start_lineEdit.setText('0')
         self.start_lineEdit.textChanged.connect(self.write_npoints)
@@ -123,23 +124,23 @@ class VariablesTableWidget(QtGui.QTableWidget):
         self.variables = self.cmd_thread._system.variables
         self.cmd_thread._update_gui_callbacks.append(self.update_gui_callback) # very dirty
         self.itemChanged.connect(self.on_item_changed)
-        
+
     def keyPressEvent(self, event):
         if event.key() == QtCore.Qt.Key_Delete:
             self.delRow(self.currentRow())
         else:
             return QtGui.QTableWidget.keyPressEvent(self, event)
-        
+
     def initUi(self,):
         self.verticalHeader().setVisible(False)
         self.setHorizontalHeaderLabels(['key', 'value'])
         self.horizontalHeader().setResizeMode(QtGui.QHeaderView.Stretch)
-        
+
     def appendRow(self):
         row = self.rowCount()
         self.insertRow(row)
         print('Line added')
-        
+
     def delRow(self, row):
         print 'deleting row %d'%row
         try:
@@ -151,7 +152,7 @@ class VariablesTableWidget(QtGui.QTableWidget):
         self.removeRow(row)
         print self.variables
         self.dump_variables()
-        
+
     def on_item_changed(self, item):
         row, col = item.row(), item.column()
         if col == 0:
@@ -170,7 +171,7 @@ class VariablesTableWidget(QtGui.QTableWidget):
             pass
         print self.variables
         self.dump_variables()
-        
+
     def update_gui_callback(self, key, value):
         # print "Update gui vars"
         self.blockSignals(True)
@@ -193,14 +194,17 @@ class VariablesTableWidget(QtGui.QTableWidget):
         self.blockSignals(False)
         print self.variables
         self.dump_variables()
-   
+
     def dump_variables(self):
-        with open(variables_dict_path, "wb") as fid:
-            json.dump(self.variables, fid)
-        
-        
-        
-    
+        # with open(variables_dict_path, "wb") as fid:
+        #     json.dump(self.variables, fid)
+        warnings.warn('WARNING: writing `variables` only is deprecated. Variables information is stored in last-program.json now.')
+        pass
+
+
+
+
+
 
 
 class VariablesWidget(QtGui.QWidget):
@@ -209,37 +213,37 @@ class VariablesWidget(QtGui.QWidget):
         self.cmd_thread = cmd_thread
         self.variables = []
         self._iconSize = iconSize
-        
+
         self.initUi()
-        
+
         self.add_variable()
-        
-    @property    
+
+    @property
     def n_vars(self):
         return len(self.variables)
-                
+
     def initUi(self):
         layout = QtGui.QVBoxLayout(self)
-        
+
         self.write_button = QtGui.QPushButton("Write")
         layout.addWidget(self.write_button)
-        
+
         self.ask_radioButton = QtGui.QRadioButton("Ask before overwrite")
         self.ask_radioButton.setChecked(True)
         layout.addWidget(self.ask_radioButton)
-        
+
         line = QtGui.QFrame()
         line.setFrameShape(QtGui.QFrame.HLine)
         line.setFrameShadow(QtGui.QFrame.Sunken)
         layout.addWidget(line)
-        
+
         hlayout = QtGui.QHBoxLayout()
         layout.addLayout(hlayout)
-        
+
         vlabel = QtGui.QLabel("Variables")
         vlabel.setFixedHeight(self._iconSize.height())
         hlayout.addWidget(vlabel)
-        
+
         self.oper_combo = QtGui.QComboBox()
         self.oper_combo.setFixedHeight(self._iconSize.height())
 #        self.oper_combo.addItem("plus") #TODO add icons
@@ -249,22 +253,22 @@ class VariablesWidget(QtGui.QWidget):
         self.oper_combo.addItem(icon, "plus")
         icon = QtGui.QIcon(QtGui.QPixmap(os.path.join(icons_path, 'times.png')))
         self.oper_combo.addItem(icon, "times")
-        hlayout.addWidget(self.oper_combo)        
+        hlayout.addWidget(self.oper_combo)
         self.oper_combo.setVisible(False)
-        
+
         hlayout.setStretch(0,2)
         hlayout.setStretch(1,1)
-        
-        
+
+
         self.vars_layout = QtGui.QVBoxLayout()
         self.vars_layout.setAlignment(QtCore.Qt.AlignTop)
         layout.addLayout(self.vars_layout)
-        
+
         line = QtGui.QFrame()
         line.setFrameShape(QtGui.QFrame.HLine)
         line.setFrameShadow(QtGui.QFrame.Sunken)
         layout.addWidget(line)
-        
+
         wait_widg = QtGui.QWidget()
         wait_layout = QtGui.QFormLayout(wait_widg)
         self.wait_spinBox = QtGui.QSpinBox()
@@ -272,30 +276,30 @@ class VariablesWidget(QtGui.QWidget):
         self.wait_spinBox.setMaximum(99999)
         self.wait_spinBox.setValue(100)
         layout.addWidget(wait_widg)
-        
+
         line = QtGui.QFrame()
         line.setFrameShape(QtGui.QFrame.HLine)
         line.setFrameShadow(QtGui.QFrame.Sunken)
         layout.addWidget(line)
-        
+
         hlayout = QtGui.QHBoxLayout()
-        
+
         vlabel = QtGui.QLabel("Current variables")
         vlabel.setFixedHeight(self._iconSize.height())
         hlayout.addWidget(vlabel)
-        
+
         add_button = QtGui.QPushButton("Add")
         hlayout.addWidget(add_button)
-        
+
         layout.addLayout(hlayout)
-                
+
         self.variablesTableWidget = VariablesTableWidget(0,2, cmd_thread=self.cmd_thread, iconSize=self._iconSize)
         layout.addWidget(self.variablesTableWidget)
-        
+
         add_button.clicked.connect(self.variablesTableWidget.appendRow)
         layout.addStretch()
-        
-        
+
+
     def add_variable(self):
         v = VariableForm()
         self.variables.append(v)
@@ -306,7 +310,7 @@ class VariablesWidget(QtGui.QWidget):
             v.deleteMeSignal.connect(self.del_variable)
         else:
             v.del_button.setEnabled(False)
-        
+
     @QtCore.Slot(QtGui.QWidget)
     def del_variable(self, var):
         self.vars_layout.removeWidget(var)
@@ -314,9 +318,9 @@ class VariablesWidget(QtGui.QWidget):
         self.variables.remove(var)
         if self.n_vars <= 1:
             self.oper_combo.setVisible(False)
-                    
-        
-        
+
+
+
 class CommandWidget(QtGui.QWidget):
     def __init__(self, cmd_thread, init_edit, loop_edit, parent=None, *args, **kwargs):
         self.cmd_thread = cmd_thread
@@ -326,12 +330,12 @@ class CommandWidget(QtGui.QWidget):
         self.cmd_loop_edit.setToolTip("infinite loop, interrupt with cmd.stop()")
         super(CommandWidget, self).__init__(parent=None, *args, **kwargs)
         self.initUi()
-        
+
         # get attributes from the edit widget
-        
+
         self.vars_tab.write_button.clicked.connect(self.write_commands)
-        
-    @property    
+
+    @property
     def n_vars(self):
         return len(self.vars_tab.variables)
     @property
@@ -340,10 +344,10 @@ class CommandWidget(QtGui.QWidget):
             return self.vars_tab.oper_combo.currentText()
         else:
             return None
-        
+
     def initUi(self):
         cmd_layout = QtGui.QGridLayout(self)
-        
+
         #commands tab
         self.vars_tab = VariablesWidget(parent=self, cmd_thread=self.cmd_thread)
         self.vars_tab.setToolTip("An user-friendly interface for cmd variables setting")
@@ -374,7 +378,7 @@ class CommandWidget(QtGui.QWidget):
         self.cmd_init_edit.setWordWrapMode(QtGui.QTextOption.NoWrap)
         self.cmd_loop_edit.setFont(font)
         self.cmd_init_edit.setFont(font)
-        
+
 
         #start stop commands buttons settings
         self.start_cmd_button = QtGui.QPushButton("Start")
@@ -388,7 +392,7 @@ class CommandWidget(QtGui.QWidget):
         cmd_layout.addWidget(cmd_sub_tabwidget, 0, 0, 1, 2)
         cmd_layout.addWidget(self.start_cmd_button, 1, 0, 1, 1)
         cmd_layout.addWidget(self.stop_cmd_button, 1, 1, 1, 1)
-        
+
     def write_commands(self):
         if not self.vars_tab.ask_radioButton.isChecked():
             ok = True
@@ -409,7 +413,7 @@ class CommandWidget(QtGui.QWidget):
             print "Autowriting commands"
             self.cmd_init_edit.setText(init_prog)
             self.cmd_loop_edit.setText(loop_prog)
-        
+
     def build_init(self):
         variables = self.vars_tab.variables
         #TODO: check if we need to futurize all the programs as well
@@ -422,13 +426,13 @@ class CommandWidget(QtGui.QWidget):
             var = variables[0]
             prog += "iters = np.arange(%g, %g, %g)\n"%(var.start, var.stop, var.step)
         else:
-            
+
             arr_names = ["%s_arr"%var.name for var in variables]
             if self.operation == 'plus':
                 for var, name in zip(variables, arr_names):
                     prog += "%s = np.arange(%g, %g, %g)\n"%(name, var.start, var.stop, var.step)
                 prog += "iters = list(zip(%s))\n"%', '.join(arr_names)
-                
+
             elif self.operation == 'times':
                 prog += "%s = np.mgrid["%(', '.join(arr_names))
                 for var, name in zip(variables, arr_names):
@@ -437,13 +441,13 @@ class CommandWidget(QtGui.QWidget):
                 prog += "iters = list(zip(%s))\n"%', '.join(["%s.ravel()"%n for n in arr_names])
         prog += "j = 0\n"
         return prog
-        
+
     def build_loop(self):
         prog = ""
         prog += "print('\\n-------o-------')\n"
         variables = self.vars_tab.variables
         val_names = ["%s1"%var.name for var in variables]
-        
+
         prog += "%s = iters[j]\n"%', '.join(val_names)
         _set = ""
         _out = u"'Run #%d/%d, with variables:\\n"

@@ -35,6 +35,7 @@ from libraries import init_boards, init_actions, init_programs
 import os, sys
 
 import json
+# last_program_path = './last-program.json'
 last_program_path = '/home/stronzio/c-siscam-img/last-program.json'
 
 #change path
@@ -231,7 +232,7 @@ class System(object):
         D['program'] = {}
         for j, inst in enumerate(instructions):
             inst_d = inst._repr_dict()
-            time = self.get_time(inst_d['time'])
+            time = '{:.4f}'.format(self.get_time(inst_d['time']))
             D['program'][time] = inst_d
         D['program_name'] = self.main_program.name
         D['variables'] = self.variables
@@ -239,14 +240,14 @@ class System(object):
         print 'Writing {} on logfile {}'.format(self.main_program.name, last_program_path)
         with open(last_program_path, "wb") as fid:
             json.dump(D, fid, sort_keys=True, indent=2)
-            
+
     def _run_program(self):
         instrs_fpga = []
         if isinstance(self.main_program, lib_program.Program):
             instrs_prg = self.main_program.get_all_instructions()
 
             valid, problems, problems_ix = self.check_instructions(instrs_prg)
-            print 
+            print
             if not valid:
                 for ix, probl in zip(problems_ix, problems):
                     probl.parents[-1].get(probl.uuid).enable = False

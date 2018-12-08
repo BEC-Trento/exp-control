@@ -43,7 +43,8 @@ def main(args):
     win = gui.programwindow.ProgramEditWindow(system=system)
 
     win.setWindowTitle("%s (%s)" % (PRG_NAME, PRG_VERSION))
-    win.showMaximized()
+    # win.showMaximized()
+    win.show()
     win.setFocus()
 
     sys.exit(app.exec_())
