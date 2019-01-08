@@ -35,8 +35,8 @@ from libraries import init_boards, init_actions, init_programs
 import os, sys
 
 import json
-# last_program_path = './last-program.json'
-last_program_path = '/home/stronzio/c-siscam-img/last-program.json'
+last_program_path = './last-program.json'
+# last_program_path = '/home/stronzio/c-siscam-img/last-program.json'
 
 #change path
 #os.chdir(os.path.dirname(os.path.abspath(sys.argv[0])))
@@ -210,7 +210,7 @@ class System(object):
         #TODO: control if the correct main program is loaded when it is called
         result = False
         if isinstance(self.main_program, lib_program.Program):
-            valid0, program_commands = self._get_program_commands()
+            valid0, program_commands, script_actions = self._get_program_commands()
             if not valid0:
                 print 'ERRORS in program. Not executing.'
                 os.system('beep -r 2') #this requires Linux' beep installed
@@ -221,6 +221,11 @@ class System(object):
                     sleep_event = threading.Event()
                     sleep_event.wait(1000*self._time_multiplier)
                 print "running the current program"
+                for action in script_actions:
+                    call = action.call()
+                    print(call)
+                    #TODO: how to manage exceptions or crashes here?
+                    os.system(call)
                 for fpga_id in self.fpga_list:
                     valid = fpga_id.send_program_and_run(program_commands)
                     result = result or valid
@@ -247,6 +252,12 @@ class System(object):
         instrs_fpga = []
         if isinstance(self.main_program, lib_program.Program):
             instrs_prg = self.main_program.get_all_instructions()
+            # separate normal actions from ScriptActions here
+            script_actions = []
+            for j, instr in enumerate(instrs_prg):
+                if isinstance(instr.action, lib_action.ScriptAction):
+                    instrs_prg.pop(j)
+                    script_actions.append(instr.action)
 
             valid, problems, problems_ix = self.check_instructions(instrs_prg)
             print
@@ -271,19 +282,19 @@ class System(object):
             end_instr = lib_instruction.FpgaInstruction(0, action=lib_action.EndAction(self))
             instrs_fpga.append(end_instr)
 
-        return valid, instrs_fpga
+        return valid, instrs_fpga, script_actions
 
     def _get_program_commands(self):
         cmd_list = []
         if isinstance(self.main_program, lib_program.Program):
-            valid, instructions = self._run_program()
+            valid, instructions_fpga, script_actions = self._run_program()
 
             if self.external_trigger:
                 cmd_list.append(lib_command.ExtTriggerOnCommand())
             else:
                 cmd_list.append(lib_command.ExtTriggerOffCommand())
 
-            for instr_num, instr in enumerate(instructions):
+            for instr_num, instr in enumerate(instructions_fpga):
                 cmd_list.append(lib_command.LoadCommand(memory=instr_num,
                                                         command=instr.action.command_bits,
                                                         time=instr.time,
@@ -292,7 +303,7 @@ class System(object):
 
             cmd_list.append(lib_command.LoadDoneCommand())
 
-        return valid, cmd_list
+        return valid, cmd_list, script_actions
 
     def _get_instr_time_diff(self, prev_instr, curr_instr):
         if isinstance(prev_instr, lib_instruction.Instruction) and \

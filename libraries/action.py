@@ -79,7 +79,7 @@ class DigitalThresholdAction(DataAction):
             threshold = [threshold]
 
         self.channel = []
-        self.status = []      
+        self.status = []
         # Mannaia la miseria
         self.threshold = [] #[float(thr) if thr is not None else None for thr in threshold]
 
@@ -164,7 +164,7 @@ class DdsAction(DataAction):
 class AnalogAction(DataAction):
     def __init__(self, system, board, value=None, scale=1.0, offset=0, bipolar=True, name="", comment=""):
         super(AnalogAction, self).__init__(system, board, name, comment)
-        
+
         self.scale = scale
         self.offset = offset
         if value is not None:
@@ -234,3 +234,31 @@ class EndAction(Action):
 class ForAction(Action):
     #TODO: implement
     pass
+
+#--- script actions
+class ScriptAction(Action):
+    def __init__(self, system, script, name="", comment=""):
+        super(ScriptAction, self).__init__(system, name, comment)
+        self.board = lib_board.Board(None)
+        self.command_bits = None
+        self.script = script
+
+    def do_action(self):
+        raise NotImplementedError
+
+    def call(self):
+        return "./{:s}".format(self.script)
+
+class MarconiScriptAction(ScriptAction):
+    def __init__(self, system, script, frequency=None, amplitude=None, name="", comment=""):
+        super(MarconiScriptAction, self).__init__(system, script, name, comment)
+        self.frequency = frequency
+        self.amplitude = amplitude
+
+    def call(self):
+        call = "./{:s}".format(self.script)
+        if self.frequency is not None:
+            call += " --freq {:.9f}".format(self.frequency)
+        if self.amplitude is not None:
+            call += " --amp {:.9f}".format(self.amplitude)
+        return  call
