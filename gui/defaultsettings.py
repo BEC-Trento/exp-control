@@ -24,6 +24,7 @@ class DefaultProgSettings(object):
         self.config_fname = str(fname)
         self.last_prg = None
         self.last_evap_ramp = None
+        self.variables = {}
 
     def save_settings(self):
         try:

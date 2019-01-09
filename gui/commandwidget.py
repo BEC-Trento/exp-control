@@ -116,13 +116,19 @@ class VariableForm(QtGui.QWidget):
         self.gridLayout.addWidget(self.npoints_value_label, 2, 3, 1, 1)
 
 class VariablesTableWidget(QtGui.QTableWidget):
-    def __init__(self, rows, columns, cmd_thread, iconSize=QtCore.QSize(36, 36), *args, **kwargs):
+    def __init__(self, rows, columns, cmd_thread, progsettings, iconSize=QtCore.QSize(36, 36), *args, **kwargs):
         super(VariablesTableWidget, self).__init__(rows, columns, *args, **kwargs)
         self._iconSize = iconSize
         self.cmd_thread = cmd_thread
+        self.progsettings = progsettings
         self.initUi()
         self.variables = self.cmd_thread._system.variables
+        # load progsettings
+        for key, val in self.progsettings.variables.items():
+            self.update_gui_callback(key, val)
+        
         self.cmd_thread._update_gui_callbacks.append(self.update_gui_callback) # very dirty
+        self.cmd_thread._update_gui_callbacks.append(self.update_progsettings_callback)
         self.itemChanged.connect(self.on_item_changed)
 
     def keyPressEvent(self, event):
@@ -144,13 +150,15 @@ class VariablesTableWidget(QtGui.QTableWidget):
     def delRow(self, row):
         print 'deleting row %d'%row
         try:
-            key = self.item(row, 0).text()
+            key = str(self.item(row, 0).text())
             self.variables.pop(key)
+            self.progsettings.variables.pop(key)
         except Exception as e:
             # in case you are removing a row without a key or with a wrong one
             print(e)
         self.removeRow(row)
         print self.variables
+        # print self.progsettings.variables
         self.dump_variables()
 
     def on_item_changed(self, item):
@@ -164,12 +172,12 @@ class VariablesTableWidget(QtGui.QTableWidget):
         try:
             key = str(self.item(row, 0).text())
             val = float(self.item(row, 1).text())
-            self.variables[key] = val
+            # self.variables[key] = val NOPE this must be done via set_var
+            self.cmd_thread.set_var(key, val)
         except ValueError as e:
             print e
         except AttributeError:
             pass
-        print self.variables
         self.dump_variables()
 
     def update_gui_callback(self, key, value):
@@ -194,11 +202,15 @@ class VariablesTableWidget(QtGui.QTableWidget):
         self.blockSignals(False)
         print self.variables
         self.dump_variables()
+        
+    def update_progsettings_callback(self, key, value):
+        # print(self.progsettings)
+        self.progsettings.variables.update({key: value})
 
     def dump_variables(self):
         # with open(variables_dict_path, "wb") as fid:
         #     json.dump(self.variables, fid)
-        warnings.warn('WARNING: writing `variables` only is deprecated. Variables information is stored in last-program.json now.')
+        # warnings.warn('WARNING: writing `variables` only is deprecated. Variables information is stored in last-program.json now.')
         pass
 
 
@@ -208,9 +220,10 @@ class VariablesTableWidget(QtGui.QTableWidget):
 
 
 class VariablesWidget(QtGui.QWidget):
-    def __init__(self, cmd_thread, iconSize=QtCore.QSize(36, 36), *args, **kwargs):
+    def __init__(self, cmd_thread, progsettings, iconSize=QtCore.QSize(36, 36), *args, **kwargs):
         super(VariablesWidget, self).__init__(*args, **kwargs)
         self.cmd_thread = cmd_thread
+        self.progsettings = progsettings
         self.variables = []
         self._iconSize = iconSize
 
@@ -272,6 +285,7 @@ class VariablesWidget(QtGui.QWidget):
         wait_widg = QtGui.QWidget()
         wait_layout = QtGui.QFormLayout(wait_widg)
         self.shuffle_checkbox = QtGui.QCheckBox()
+        self.shuffle_checkbox.setChecked(True)
         wait_layout.addRow("Shuffle iters", self.shuffle_checkbox)
         self.wait_spinBox = QtGui.QSpinBox()
         wait_layout.addRow("Wait time (ms)", self.wait_spinBox)
@@ -295,7 +309,7 @@ class VariablesWidget(QtGui.QWidget):
 
         layout.addLayout(hlayout)
 
-        self.variablesTableWidget = VariablesTableWidget(0,2, cmd_thread=self.cmd_thread, iconSize=self._iconSize)
+        self.variablesTableWidget = VariablesTableWidget(0,2, parent=self, cmd_thread=self.cmd_thread, iconSize=self._iconSize, progsettings=self.progsettings)
         layout.addWidget(self.variablesTableWidget)
 
         add_button.clicked.connect(self.variablesTableWidget.appendRow)
@@ -324,13 +338,14 @@ class VariablesWidget(QtGui.QWidget):
 
 
 class CommandWidget(QtGui.QWidget):
-    def __init__(self, cmd_thread, init_edit, loop_edit, parent=None, *args, **kwargs):
+    def __init__(self, cmd_thread, init_edit, loop_edit, parent=None, progsettings=None, *args, **kwargs):
         self.cmd_thread = cmd_thread
         self.cmd_init_edit = init_edit
         self.cmd_loop_edit = loop_edit
         self.cmd_init_edit.setToolTip("run once at the beginning, variables prg and cmd are available")
         self.cmd_loop_edit.setToolTip("infinite loop, interrupt with cmd.stop()")
         super(CommandWidget, self).__init__(parent=None, *args, **kwargs)
+        self.progsettings = progsettings
         self.initUi()
 
         # get attributes from the edit widget
@@ -351,7 +366,7 @@ class CommandWidget(QtGui.QWidget):
         cmd_layout = QtGui.QGridLayout(self)
 
         #commands tab
-        self.vars_tab = VariablesWidget(parent=self, cmd_thread=self.cmd_thread)
+        self.vars_tab = VariablesWidget(parent=self, cmd_thread=self.cmd_thread, progsettings=self.progsettings)
         self.vars_tab.setToolTip("An user-friendly interface for cmd variables setting")
 
         code_tab = QtGui.QWidget()
