@@ -82,7 +82,10 @@ class SysCommand(object):
             print "CMD: started"
             if self._system.main_program is not None:
                 action_name = self._system.main_program.name
-                self._system.action_list.get_cmd(action_name) #questa è l'azione che esegue i commands
+                try:
+                    self._system.action_list.get_cmd(action_name) #questa è l'azione che esegue i commands
+                except Exception as e:
+                    print("Exception while running cmd: {0:s}".format(e))
             self.running = False
 
     def get_var(self, name):

@@ -260,5 +260,5 @@ class MarconiScriptAction(ScriptAction):
         if self.frequency is not None:
             call += " --freq {:.9f}".format(self.frequency)
         if self.amplitude is not None:
-            call += " --amp {:.9f}".format(self.amplitude)
+            call += " --amp {:.2f}".format(self.amplitude)
         return  call
