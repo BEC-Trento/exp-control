@@ -271,6 +271,8 @@ class VariablesWidget(QtGui.QWidget):
 
         wait_widg = QtGui.QWidget()
         wait_layout = QtGui.QFormLayout(wait_widg)
+        self.shuffle_checkbox = QtGui.QCheckBox()
+        wait_layout.addRow("Shuffle iters", self.shuffle_checkbox)
         self.wait_spinBox = QtGui.QSpinBox()
         wait_layout.addRow("Wait time (ms)", self.wait_spinBox)
         self.wait_spinBox.setMaximum(99999)
@@ -439,6 +441,8 @@ class CommandWidget(QtGui.QWidget):
                     prog += "%g:%g:%g, "%(var.start, var.stop, var.step)
                 prog += "]\n"
                 prog += "iters = list(zip(%s))\n"%', '.join(["%s.ravel()"%n for n in arr_names])
+        if self.vars_tab.shuffle_checkbox.checkState():
+            prog += "np.random.shuffle(iters)\n"
         prog += "j = 0\n"
         return prog
 

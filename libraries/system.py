@@ -151,10 +151,12 @@ class System(object):
             print "WARNING: any program loaded"
             return 0
 
-    def check_instructions(self, instructions):
+    def check_instructions(self, instructions=None):
         #TODO: control if the correct main program is loaded when it is called
         problems = []
         problems_ix = []
+        if instructions is None:
+            instructions = self.main_program.get_all_instructions()
         valid = True
         first_density_error = False
         if len(instructions) >= 2:
@@ -210,7 +212,7 @@ class System(object):
         #TODO: control if the correct main program is loaded when it is called
         result = False
         if isinstance(self.main_program, lib_program.Program):
-            valid0, program_commands = self._get_program_commands()
+            valid0, program_commands, instr_prg = self._get_program_commands()
             if not valid0:
                 print 'ERRORS in program. Not executing.'
                 os.system('beep -r 2') #this requires Linux' beep installed
@@ -221,6 +223,7 @@ class System(object):
                     sleep_event = threading.Event()
                     sleep_event.wait(1000*self._time_multiplier)
                 print "running the current program"
+                self._print_instructions(instr_prg)
                 for fpga_id in self.fpga_list:
                     valid = fpga_id.send_program_and_run(program_commands)
                     result = result or valid
@@ -236,7 +239,7 @@ class System(object):
             time = '{:.4f}'.format(self.get_time(inst_d['time']))
             D['program'][time] = inst_d
         D['program_name'] = self.main_program.name
-        D['evaporation_ramp'] = self.evap_ramp_name
+        D['ramp_name'] = self.evap_ramp_name
         D['variables'] = self.variables
         # print json.dumps(D, sort_keys=True, indent=2)
         print 'Writing {} on logfile {}'.format(self.main_program.name, last_program_path)
@@ -254,8 +257,6 @@ class System(object):
                 for ix, probl in zip(problems_ix, problems):
                     probl.parents[-1].get(probl.uuid).enable = False
                     instrs_prg[ix].enable = False
-            else:
-                self._print_instructions(instrs_prg)
 
             prev_instr = lib_instruction.Instruction(0, lib_action.Action(self, "temp"))
             for curr_instr in instrs_prg:
@@ -271,12 +272,12 @@ class System(object):
             end_instr = lib_instruction.FpgaInstruction(0, action=lib_action.EndAction(self))
             instrs_fpga.append(end_instr)
 
-        return valid, instrs_fpga
+        return valid, instrs_fpga, instrs_prg
 
     def _get_program_commands(self):
         cmd_list = []
         if isinstance(self.main_program, lib_program.Program):
-            valid, instructions = self._run_program()
+            valid, instructions, instr_prg = self._run_program()
 
             if self.external_trigger:
                 cmd_list.append(lib_command.ExtTriggerOnCommand())
@@ -292,7 +293,7 @@ class System(object):
 
             cmd_list.append(lib_command.LoadDoneCommand())
 
-        return valid, cmd_list
+        return valid, cmd_list, instr_prg
 
     def _get_instr_time_diff(self, prev_instr, curr_instr):
         if isinstance(prev_instr, lib_instruction.Instruction) and \
