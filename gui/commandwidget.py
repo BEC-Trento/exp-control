@@ -123,13 +123,17 @@ class VariablesTableWidget(QtGui.QTableWidget):
         self.progsettings = progsettings
         self.initUi()
         self.variables = self.cmd_thread._system.variables
+        
         # load progsettings
         for key, val in self.progsettings.variables.items():
             self.update_gui_callback(key, val)
-        
+            self.cmd_thread.set_var(key, val)
+            
         self.cmd_thread._update_gui_callbacks.append(self.update_gui_callback) # very dirty
         self.cmd_thread._update_gui_callbacks.append(self.update_progsettings_callback)
         self.itemChanged.connect(self.on_item_changed)
+        
+        
 
     def keyPressEvent(self, event):
         if event.key() == QtCore.Qt.Key_Delete:

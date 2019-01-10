@@ -44,7 +44,7 @@ ser.write(bytes("*IDN?;\n", encoding="ascii"))
 a = ser.readline()
 print("Found:\n"+str(a))
 
-command_dict = {'freq': "CFRQ:VALUE {:.9f}MHZ;",
+command_dict = {'freq': "CFRQ:VALUE {:.6f}MHZ;",
                 'amp':  "RFLV:VALUE {:.2f}DBM;",
                 }
 

@@ -212,6 +212,11 @@ class System(object):
         #TODO: control if the correct main program is loaded when it is called
         result = False
         if isinstance(self.main_program, lib_program.Program):
+        # valid0 : error state
+        # program_commands : actions for FPGA (time + binary)
+        # instr_prg : instructions for FPGA (list of Action objects + time)
+        # script_actions : list of ScriptAction objects
+        
             valid0, program_commands, instr_prg, script_actions = self._get_program_commands()
 
             if not valid0:
