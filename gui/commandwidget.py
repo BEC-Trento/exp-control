@@ -125,7 +125,10 @@ class VariablesTableWidget(QtGui.QTableWidget):
         self.variables = self.cmd_thread._system.variables
         
         # load progsettings
-        for key, val in self.progsettings.variables.items():
+        keys = list(self.progsettings.variables.keys())
+        keys.sort()
+        for key in keys:
+            val = self.progsettings.variables[key]
             self.update_gui_callback(key, val)
             self.cmd_thread.set_var(key, val)
             

@@ -29,7 +29,7 @@ class DefaultProgSettings(object):
     def save_settings(self):
         try:
             with open(self.config_fname, "wb") as fid:
-                json.dump(vars(self), fid)
+                json.dump(vars(self), fid, sort_keys=True, indent=2)
         except IOError:
             print "ERROR: error while writing settings into file '" + self.config_fname + "'"
 
