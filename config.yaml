@@ -1,0 +1,7 @@
+new_dds_programming_list:
+  - DDS41
+lock_channel:
+ensure_off:
+  TTL3:
+    - 15
+debug: False

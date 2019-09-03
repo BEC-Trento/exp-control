@@ -32,12 +32,17 @@ import gui.rampgenwidget
 import PySide.QtGui as QtGui
 import PySide.QtCore as QtCore
 
+import sys
+
+
 class ProgramEditWindow(QtGui.QMainWindow, object):
 
     def __init__(self, system):
         super(ProgramEditWindow, self).__init__()
 
         self.system = system
+        self.sequence_index = int(sys.argv[1]) if len(sys.argv) > 1 else 0
+        print('Starting with sequence index {}'.format(self.sequence_index))
 
         self.progressbar_step_ms = 200.0
         self.progressbar_step = 0
@@ -272,6 +277,9 @@ class ProgramEditWindow(QtGui.QMainWindow, object):
         repeat_at_time = float(self.iter_fixed_time_text.text())
         self.iter_num = int(self.iter_num_text.value())
         if self.iter_flag:
+            self.sequence_index += 1
+            self.system.sequence_index = self.sequence_index
+            print('SEQUENCE INDEX = {}'.format(self.sequence_index))
             self.on_iter_take_prg()
             self.iter_start_button.setStyleSheet("color: %s"%RED)
             self.iter_par_groupbox.setEnabled(False)
@@ -331,10 +339,16 @@ class ProgramEditWindow(QtGui.QMainWindow, object):
             self.iter_prg_label.setToolTip("the program that will be repeated is a snapshot of \"%s\""%self.table_widget.table.prg_name)
 
     def on_program_sent(self, evt=None):
+        self.sequence_index += 1
+        self.system.sequence_index = self.sequence_index
+        print('SEQUENCE INDEX = {}'.format(self.sequence_index))
         self.table_widget.table.send_prg(save_before=bool(self.save_before_send_check.isChecked()))
 
     def on_start_cmd(self, evt=None):
         if not self.system.sys_commands_running():
+            self.sequence_index += 1
+            self.system.sequence_index = self.sequence_index
+            print('SEQUENCE INDEX = {}'.format(self.sequence_index))
             if bool(self.save_before_send_check.isChecked()):
                 self.table_widget.table.save_prg()
             self.system.set_program(self.table_widget.table.prg_name)

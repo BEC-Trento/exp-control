@@ -28,8 +28,6 @@ ix = [p.product for p in ports].index(product)
 port = ports[ix].device
 print('Marconi found on port %s'%port)
 
-#port = "/dev/ttyUSB4"
-#Freq = 1640.000000 + 1e-3*args.detuning #kHz
 Freq = args.freq
 
 ser = serial.Serial(port,

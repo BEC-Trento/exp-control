@@ -63,7 +63,7 @@ class VariableForm(QtGui.QWidget):
             return 1
     @property
     def npoints(self):
-        return max(0, int((self.stop-1 - self.start)/(self.step))+1)
+        return max(0, int((self.stop - self.start)/(self.step))+1)
 
     def write_npoints(self):
         self.npoints_value_label.setText("(%d)"%self.npoints)
@@ -448,19 +448,19 @@ class CommandWidget(QtGui.QWidget):
 #            prog += "cmd.set_var('%s', 0)\n"%var.name
         if self.operation is None: #1 single variable
             var = variables[0]
-            prog += "iters = np.arange(%g, %g, %g)\n"%(var.start, var.stop, var.step)
+            prog += "iters = np.arange(%f, %f, %f)\n"%(var.start, var.stop, var.step)
         else:
 
             arr_names = ["%s_arr"%var.name for var in variables]
             if self.operation == 'plus':
                 for var, name in zip(variables, arr_names):
-                    prog += "%s = np.arange(%g, %g, %g)\n"%(name, var.start, var.stop, var.step)
+                    prog += "%s = np.arange(%f, %f, %f)\n"%(name, var.start, var.stop, var.step)
                 prog += "iters = list(zip(%s))\n"%', '.join(arr_names)
 
             elif self.operation == 'times':
                 prog += "%s = np.mgrid["%(', '.join(arr_names))
                 for var, name in zip(variables, arr_names):
-                    prog += "%g:%g:%g, "%(var.start, var.stop, var.step)
+                    prog += "%f:%f:%f, "%(var.start, var.stop, var.step)
                 prog += "]\n"
                 prog += "iters = list(zip(%s))\n"%', '.join(["%s.ravel()"%n for n in arr_names])
         if self.vars_tab.shuffle_checkbox.checkState():

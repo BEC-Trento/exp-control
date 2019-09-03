@@ -262,3 +262,24 @@ class MarconiScriptAction(ScriptAction):
         if self.amplitude is not None:
             call += " --amp {:.2f}".format(self.amplitude)
         return  call
+        
+class MarconiSScriptAction(ScriptAction):
+    def __init__(self, system, script, frequency1=None, amplitude1=None, frequency2=None, amplitude2=None,  name="", comment=""):
+        super(MarconiSScriptAction, self).__init__(system, script, name, comment)
+        self.frequency1 = frequency1
+        self.amplitude1 = amplitude1
+        self.frequency2 = frequency2
+        self.amplitude2 = amplitude2
+
+
+    def call(self):
+        call = "./{:s}".format(self.script)
+        if self.frequency1 is not None:
+            call += " --freq1 {:.9f}".format(self.frequency1)
+        if self.amplitude1 is not None:
+            call += " --amp1 {:.2f}".format(self.amplitude1)
+        if self.frequency2 is not None:
+            call += " --freq2 {:.9f}".format(self.frequency2)
+        if self.amplitude2 is not None:
+            call += " --amp2 {:.2f}".format(self.amplitude2)
+        return  call
