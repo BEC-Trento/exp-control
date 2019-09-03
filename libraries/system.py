@@ -329,6 +329,7 @@ class System(object):
 #                        ttls[key].append(instr)
 
     def _program_dds(self, instructions):
+    
         # terrible hack to get the DDSs working without LUT backsearches
         dds = defaultdict(list)
         
@@ -340,12 +341,18 @@ class System(object):
                 key = instr.action.board.name
                 if key in self.config['new_dds_programming_list']:
                     dds[key].append(instr)
-            
         
         # make sure they are sorted and the time is not str
         # .time is actually int but I feel safer this way
         for k, v in dds.items():
             dds[k] = sorted(v, key=lambda item: float(item.time))
+        
+#        for k, v in dds.items():
+#            for instr in v:
+#                try:
+#                    print(instr.action.kwargs)
+#                except:
+#                    pass
         
         # Get frequency and amplitude values and store them in the state key
         # increment n_lut starting from 1.
@@ -353,33 +360,47 @@ class System(object):
         # then each instruction will just increment the LUT
         for k, v in dds.items():
             for instr in v:
-                if instr.action.channel == 1:  
-                    instr.action.state = (instr.action.frequency, 
-                                          instr.action.amplitude,
-                                          None, None)
-                elif instr.action.channel == 2:
-                    instr.action.state = (None, None,
-                                          instr.action.frequency, 
-                                          instr.action.amplitude)
-                elif instr.action.channel == None:
-                    pass
+
+#            KILL MEEEEE
+#                if instr.action.channel == 1:  
+#                    instr.action.state = (instr.action.frequency, 
+#                                          instr.action.amplitude,
+#                                          None, None)
+#                elif instr.action.channel == 2:
+#                    instr.action.state = (None, None,
+#                                          instr.action.frequency, 
+#                                          instr.action.amplitude)
+#                elif instr.action.channel == None:
+#                    pass
                     # it's already a LUT action
 #                        instr.action.state = (None, None,
 #                                              instr.action.frequency, 
 #                                              instr.action.amplitude)
-                else:
-                    raise Exception('Wrong DDS channel.')
-                
-                channel = 'ch{}'.format(instr.action.channel - 1)
-                instr.action.state2 = {channel: {}}
-                if instr.action.frequency:
-                    instr.action.state2[channel]['frequency'] = instr.action.frequency
-                if instr.action.amplitude:
-                    instr.action.state2[channel]['amplitude'] = instr.action.amplitude
+#                else:
+#                    raise Exception('Wrong DDS channel.')
+#                
+                try:
+                    channel = 'ch{}'.format(instr.action.channel - 1)
+                    instr.action.state2 = {channel: {}}
+                    if instr.action.frequency:
+                        instr.action.state2[channel]['frequency'] = instr.action.frequency
+                    if instr.action.amplitude:
+                        instr.action.state2[channel]['amplitude'] = instr.action.amplitude
+                except TypeError:
+                    # then this is a FullDdsAction
                     
+                    instr.action.state2 = {'ch0': {}, 'ch1': {}}
+                    instr.action.state2['ch0']['frequency'] = instr.action.kwargs['ch0_freq']
+                    instr.action.state2['ch0']['amplitude'] = instr.action.kwargs['ch0_amp']
+                    instr.action.state2['ch0']['phase'] = instr.action.kwargs['ch0_phase']
+                    instr.action.state2['ch1']['frequency'] = instr.action.kwargs['ch1_freq']
+                    instr.action.state2['ch1']['amplitude'] = instr.action.kwargs['ch1_amp']
+                    instr.action.state2['ch1']['phase'] = instr.action.kwargs['ch1_phase']
+                    
+                        
         
             
-            lut = [instr.action.state for instr in v]
+            lut = [instr.action.state2 for instr in v]
             # this is ok but randomises the lut since set is not ordered
             # it will still work properly but I prefer seeing it ordered 
             # for now while I'm still debuging
@@ -393,16 +414,16 @@ class System(object):
             
             # get LUT indices
             indices = [lut_unique.index(item) for item in lut]
-            
+
             for idx, instr in zip(indices, v):
                 instr.action.nn_lut = idx
                 
                 # Change this to True for new style DDS programming  
-                if self.config.get('new_dds_programming', True):
+                if self.config.get('new_dds_programming_list', True):
                     instr.action.frequency = None
                     instr.action.amplitude = None
-                    if instr.action.channel is not None:
-                        instr.action.n_lut = idx
+#                    if instr.action.channel is not None:
+                    instr.action.n_lut = idx
 
         
         if self.config['debug']:

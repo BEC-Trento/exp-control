@@ -128,6 +128,19 @@ class ActionList(object):
             handler=None, categories=None, commands=None, comment=""):
         """
         This function will add an action to the appropriate "list" of this istance
+        
+        Args:
+            action_name : name of the action (DUH)
+            action : action type (class of this istance)
+            board : which board to act on
+            parameters : stuff that is passed to Action. but is not GUI-editable
+            variables  : stuff that is passed to Action. and is GUI-editable (see editdialogs.py)
+            var_formats : format strings for each variable, for the GUI
+            handler :
+            categories : yup, categories
+            commands : 
+            comment : guess...
+            
         """
         action_name = str(action_name)
         if self.actions.has_key(action_name) or self.programs.has_key(action_name):
@@ -191,6 +204,7 @@ class ActionList(object):
                                 fmt = self.system.parser.fmt_to_type(var_formats[var_form])
                                 arg_dict[var_form] = fmt(arg_dict[var_form])
 
+###################     AND 50 lines of boilerplate after, the magic happens:
                         return action(self.system, **arg_dict)
 
                     handler = new_handler

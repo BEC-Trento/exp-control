@@ -161,6 +161,33 @@ class DdsAction(DataAction):
 
         return data
 
+class FullDdsAction(DdsAction):
+    """Class that can take arbitrary DDS settings (**kwargs), to be collected by a DDS programmer
+    
+    It is assumed that **kwargs will be collected and used for DDS programming
+    
+    for the FPGA, it will compile as a DdsAction, with n_lut as variable, that must
+    be correctly set during send_program_and_run() using FullDdsAction.n_lut
+    
+    """
+    def __init__(self, system, board,
+                 realtime=False, trigger=False, read_data=True,
+                 name="", comment="",
+                 **kwargs): #**kwargs will take arbitrary parameters that ActionList will give to the instances
+                 
+        super(FullDdsAction, self).__init__(system, board,
+                 channel=None, amplitude=None, frequency=None, n_lut=None,
+                 realtime=realtime, trigger=trigger, read_data=read_data,
+                 name=name, comment=comment)
+                 
+        self.kwargs = kwargs
+        self.n_lut = None
+        
+#    def do_action(self):
+#        super(FullDdsAction, self).do_action()
+    
+        
+    
 class AnalogAction(DataAction):
     def __init__(self, system, board, value=None, scale=1.0, offset=0, bipolar=True, name="", comment=""):
         super(AnalogAction, self).__init__(system, board, name, comment)

@@ -1,2 +1,5 @@
 <?xml version='1.0' encoding='ASCII'?>
-<ad9958s/>
+<ad9958s>
+  <elem>0<ch0><fr>1000000.0</fr><am>1000</am></ch0><ch1><fr>20000000.0</fr><am>1</am></ch1></elem>
+  <elem>1<ch0><fr>2000000.0</fr><am>200</am></ch0><ch1><fr>10.0</fr><am>1</am></ch1></elem>
+</ad9958s>

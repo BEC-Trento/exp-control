@@ -20,16 +20,16 @@ class DDS41:
     def program(self, lut):
         
         # This is ugly but it will do for now
-        print(lut)
-        lut2 = []
-        for item1, item2 in zip(lut[::2], lut[1::2]):
-            lut2.append({**item1, **item2})
-            lut2.append({**item1, **item2})
-        print(lut)
-        print(lut2)
+#        print(lut)
+#        lut2 = []
+#        for item1, item2 in zip(lut[::2], lut[1::2]):
+#            lut2.append({**item1, **item2})
+#            lut2.append({**item1, **item2})
+#        print(lut)
+#        print(lut2)
 
         
-        self.dds.write_table(lut2)
+        self.dds.write_table(lut)
 
 
 s = zerorpc.Server(DDS41())

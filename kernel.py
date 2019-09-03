@@ -27,7 +27,7 @@ class Kernel:
         
         dds = []
         for action in data['program'].values():
-            if action['action'] == 'DdsAction':
+            if action['action'] in ['DdsAction', 'FullDdsAction']:
                 key = action['board']
                 
                 # this will only work for one DDS for now

@@ -4,4 +4,4 @@ lock_channel:
 ensure_off:
   TTL3:
     - 15
-debug: False
+debug: True
