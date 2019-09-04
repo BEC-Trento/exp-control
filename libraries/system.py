@@ -303,31 +303,35 @@ class System(object):
                     instr.action.value += value
 #                    print(instr.action.__dict__)
 
-#    def _ensure_ttl_off(self):
-#        ttls = defaultdict(list)
-##        '14206.0700': {'action': 'DigitalAction',
-##  'board': 'TTL1',
-##  'channel': [5],
-##  'comment': '',
-##  'enable': True,
-##  'name': 'IGBT 4B OPEN',
-##  'parents': ['BEC_2019-06-25', 'Switch Off MOT_fast', 'Config field OFF'],
-##  'status': [False],
-##  'time': 142060700},
-#        
-#        # this gives list of (board, channel)
-##        channels = [ch.split('_') for ch in self.config['ensure_off']]
-##        channels = dict(channels)
+    def _ensure_ttl_off(self, instructions):
+        """checks that at the end of the program the specified TTL channels are
+        set to False.
+        This prevents to leave running what is should not be left running"""
+        
+        ttls = defaultdict(lambda : defaultdict(list))
+        boards = self.config['ensure_off'].keys()
+        
+        # search for all the instructions that change the value of the specified
+        # channels.
+        for instr in instructions:
+            if isinstance(instr.action, lib_action.DigitalAction):
+                if instr.action.board.name in boards:
+                    for channel in self.config['ensure_off'][instr.action.board.name]:
+                        if channel in instr.action.channel:
+                            ch_idx = instr.action.channel.index(channel)
+                            ttls[instr.action.board.name][channel].append(instr.action.status[ch_idx])
+        
+        # here ttls[board][channel] is a list of all states for that
+        # channel of the board. They are time-ordered, so the last one will be 
+        # the status of that TTL at the end of the program
+        for board in ttls.keys():
+            for channel in ttls[board].keys():
+                last_status = ttls[board][channel][-1]
+                if last_status is True:
+                    raise Exception('Forgot to turn OFF {} {}.'.format(board, channel))
 
-#        boards = self.config['ensure_off'].keys():
-#        
-#        for instr in instructions:
-#            if isinstance(instr.action, lib_action.DigitalAction):
-#                if instr.action.board.name in
-#                for board, channels in self.config['ensure_off'].items():
-#                    if instr.action.board.name in :
-#                        ttls[key].append(instr)
-
+    
+            
     def _program_dds(self, instructions):
     
         # terrible hack to get the DDSs working without LUT backsearches
@@ -401,6 +405,7 @@ class System(object):
         
             
             lut = [instr.action.state2 for instr in v]
+            print lut
             # this is ok but randomises the lut since set is not ordered
             # it will still work properly but I prefer seeing it ordered 
             # for now while I'm still debuging
@@ -451,6 +456,8 @@ class System(object):
                     # contact feedforward server before executing the shot
                     self._jit_update(name, instrs_prg)
             
+            if self.config.get('ensure_off', False):
+                self._ensure_ttl_off(instrs_prg)
 
             
             # separate normal actions from ScriptActions here

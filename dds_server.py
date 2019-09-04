@@ -28,7 +28,7 @@ class DDS41:
 #        print(lut)
 #        print(lut2)
 
-        
+        print(lut)
         self.dds.write_table(lut)
 
 

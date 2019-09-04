@@ -39,6 +39,7 @@ class Kernel:
         
         lut = [item['state2'] for item in dds]
         
+        print(lut)
         dds_client.program(lut)
         return 'DDS programmed.'
 
