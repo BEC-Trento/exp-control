@@ -180,12 +180,13 @@ class FullDdsAction(DdsAction):
                  realtime=realtime, trigger=trigger, read_data=read_data,
                  name=name, comment=comment)
                  
-        self.kwargs = kwargs
         self.n_lut = None
         
-#    def do_action(self):
-#        super(FullDdsAction, self).do_action()
-    
+        # Actions needs to have an attribute for every variable, otherwise the
+        # use of functions will fail
+        for k, v in kwargs.items():
+            setattr(self, k, v)
+            
         
     
 class AnalogAction(DataAction):

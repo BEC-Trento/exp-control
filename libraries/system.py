@@ -392,14 +392,16 @@ class System(object):
                         instr.action.state2[channel]['amplitude'] = instr.action.amplitude
                 except TypeError:
                     # then this is a FullDdsAction
+                    # take the values from the attributes, otherwise the functions
+                    # will not work
                     
                     instr.action.state2 = {'ch0': {}, 'ch1': {}}
-                    instr.action.state2['ch0']['frequency'] = instr.action.kwargs['ch0_freq']
-                    instr.action.state2['ch0']['amplitude'] = instr.action.kwargs['ch0_amp']
-                    instr.action.state2['ch0']['phase'] = instr.action.kwargs['ch0_phase']
-                    instr.action.state2['ch1']['frequency'] = instr.action.kwargs['ch1_freq']
-                    instr.action.state2['ch1']['amplitude'] = instr.action.kwargs['ch1_amp']
-                    instr.action.state2['ch1']['phase'] = instr.action.kwargs['ch1_phase']
+                    instr.action.state2['ch0']['frequency'] = instr.action.ch0_freq
+                    instr.action.state2['ch0']['amplitude'] = instr.action.ch0_amp
+                    instr.action.state2['ch0']['phase'] = instr.action.ch0_phase
+                    instr.action.state2['ch1']['frequency'] = instr.action.ch1_freq
+                    instr.action.state2['ch1']['amplitude'] = instr.action.ch1_amp
+                    instr.action.state2['ch1']['phase'] = instr.action.ch1_phase
                     
                         
         
