@@ -161,6 +161,34 @@ class DdsAction(DataAction):
 
         return data
 
+class FullDdsAction(DdsAction):
+    """Class that can take arbitrary DDS settings (**kwargs), to be collected by a DDS programmer
+    
+    It is assumed that **kwargs will be collected and used for DDS programming
+    
+    for the FPGA, it will compile as a DdsAction, with n_lut as variable, that must
+    be correctly set during send_program_and_run() using FullDdsAction.n_lut
+    
+    """
+    def __init__(self, system, board,
+                 realtime=False, trigger=False, read_data=True,
+                 name="", comment="",
+                 **kwargs): #**kwargs will take arbitrary parameters that ActionList will give to the instances
+                 
+        super(FullDdsAction, self).__init__(system, board,
+                 channel=None, amplitude=None, frequency=None, n_lut=None,
+                 realtime=realtime, trigger=trigger, read_data=read_data,
+                 name=name, comment=comment)
+                 
+        self.n_lut = None
+        
+        # Actions needs to have an attribute for every variable, otherwise the
+        # use of functions will fail
+        for k, v in kwargs.items():
+            setattr(self, k, v)
+            
+        
+    
 class AnalogAction(DataAction):
     def __init__(self, system, board, value=None, scale=1.0, offset=0, bipolar=True, name="", comment=""):
         super(AnalogAction, self).__init__(system, board, name, comment)
@@ -261,4 +289,25 @@ class MarconiScriptAction(ScriptAction):
             call += " --freq {:.9f}".format(self.frequency)
         if self.amplitude is not None:
             call += " --amp {:.2f}".format(self.amplitude)
+        return  call
+        
+class MarconiSScriptAction(ScriptAction):
+    def __init__(self, system, script, frequency1=None, amplitude1=None, frequency2=None, amplitude2=None,  name="", comment=""):
+        super(MarconiSScriptAction, self).__init__(system, script, name, comment)
+        self.frequency1 = frequency1
+        self.amplitude1 = amplitude1
+        self.frequency2 = frequency2
+        self.amplitude2 = amplitude2
+
+
+    def call(self):
+        call = "./{:s}".format(self.script)
+        if self.frequency1 is not None:
+            call += " --freq1 {:.9f}".format(self.frequency1)
+        if self.amplitude1 is not None:
+            call += " --amp1 {:.2f}".format(self.amplitude1)
+        if self.frequency2 is not None:
+            call += " --freq2 {:.9f}".format(self.frequency2)
+        if self.amplitude2 is not None:
+            call += " --amp2 {:.2f}".format(self.amplitude2)
         return  call

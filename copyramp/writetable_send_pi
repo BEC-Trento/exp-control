@@ -1,0 +1,10 @@
+# fake writetable which will send the ramp to raspberry and executes its writetable script
+# argument 1 is -w/-v option, argument 2 is the local "Evaporation.xml" file path and must be skipped by remote
+dir='/home/pi/ramp_generator_remote' #no trailing slash here!
+echo "Exec rsync $2"
+rsync -av $2 pi@192.168.1.155:$dir
+echo
+echo "Exec remote writetable with $1 option"
+ssh pi@192.168.1.155 "$dir/./writetable $1 $dir/Evaporation.xml"
+
+

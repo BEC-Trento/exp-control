@@ -34,9 +34,17 @@ from libraries.system import System
 import gui.programwindow
 from gui.constants import PRG_NAME, PRG_VERSION
 
+import zerorpc
+client = zerorpc.Client()
+client.connect('tcp://192.168.1.151:6778')
+#client.hello(u'exp-control')
+
+
 def main(args):
 
     system = System()
+
+    system.client = client
 
     app = QtGui.QApplication(args)
 

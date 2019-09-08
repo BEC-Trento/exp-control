@@ -51,6 +51,7 @@ def create_xml_lut(args):
     fp = open(filename ,'w')
     
     amp = np.linspace(0,1000,N_AMP)
+    amp[0] = 1
     freq_ch1  = 1e6*np.linspace(args.__dict__["f0_ch1"], args.__dict__["fn_ch1"], N_FREQ)
     freq_ch2  = 1e6*np.linspace(args.__dict__["f0_ch2"], args.__dict__["fn_ch2"], N_FREQ)
     f0_header = 1e6*args.__dict__["lut0"][0]

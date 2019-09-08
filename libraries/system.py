@@ -33,10 +33,14 @@ import libraries.ramp as lib_ramp
 import libraries.evaporation_ramp as lib_evap
 from libraries import init_boards, init_actions, init_programs
 import os, sys
+import zerorpc
+from collections import defaultdict
+import yaml
+from pathlib2 import Path
 
 import json
-# last_program_path = './last-program.json'
-last_program_path = '/home/stronzio/c-siscam-img/last-program.json'
+
+last_program_path = '/mnt/sis-fish/last_program.json'
 
 #change path
 #os.chdir(os.path.dirname(os.path.abspath(sys.argv[0])))
@@ -209,6 +213,11 @@ class System(object):
         return valid, problems, problems_ix
 
     def send_program_and_run(self):
+        
+        # Use a config file to set parameters
+        with open('/home/fish3/exp_control/config.yaml') as f:
+            self.config = yaml.safe_load(f)
+
         #TODO: control if the correct main program is loaded when it is called
         result = False
         if isinstance(self.main_program, lib_program.Program):
@@ -230,8 +239,35 @@ class System(object):
                     sleep_event.wait(1000*self._time_multiplier)
 
                 print "running the current program"
+                
+                
+                
+                            
+                if 'direct_run' not in self.main_program.name:
+                    self._print_instructions(instr_prg)
+                    print('SYSTEM SEQUENCE INDEX = {}'.format(self.sequence_index))
+                    
+                    instructions_dict = self._print_instructions(instr_prg)
+                    data = {u'system': u'exp_control', 
+                            u'shot': json.dumps(instructions_dict, sort_keys=True, indent=2)}
+                    
+                    with open(str(last_program_path + '.tmp'), 'w') as f:
+                        f.write(data['shot'])
+                    os.rename(last_program_path + '.tmp', last_program_path)
 
-                self._print_instructions(instr_prg)
+                    
+                    if self.sys_commands_running():
+                        print('Running in cmd thread.')
+                        client = zerorpc.Client()
+                        client.connect('tcp://192.168.1.151:6778')
+#                        self.client.hello()
+                        print(client.compile(data))
+                        client.close()
+                    else:
+                        print('Running in main.')
+#                        self.client.hello()
+                        print(self.client.compile(data))
+
                 for action in script_actions:
                     call = action.call()
                     print(call)
@@ -247,23 +283,185 @@ class System(object):
 
     def _print_instructions(self, instructions):
         D = {}
-        D['program'] = {}
+        D[u'program'] = {}
+        D[u'sequence_index'] = self.sequence_index
         for j, inst in enumerate(instructions):
             inst_d = inst._repr_dict()
             time = '{:.4f}'.format(self.get_time(inst_d['time']))
-            D['program'][time] = inst_d
-        D['program_name'] = self.main_program.name
-        D['ramp_name'] = self.evap_ramp_name
-        D['variables'] = self.variables
-        # print json.dumps(D, sort_keys=True, indent=2)
-        print 'Writing {} on logfile {}'.format(self.main_program.name, last_program_path)
-        with open(last_program_path, "wb") as fid:
-            json.dump(D, fid, sort_keys=True, indent=2)
+            D[u'program'][time] = inst_d
+        D[u'program_name'] = self.main_program.name
+        D[u'ramp_name'] = self.evap_ramp_name
+        D[u'variables'] = self.variables
+        return D
+    
+    def _jit_update(self, name, instructions):
+        # just-in-time update of a selected value
+        for instr in instructions:
+            if isinstance(instr.action, lib_action.AnalogAction):
+                if instr.action.name == name:
+                    value = self.client.lock('banana')
+                    instr.action.value += value
+#                    print(instr.action.__dict__)
 
+    def _ensure_ttl_off(self, instructions):
+        """checks that at the end of the program the specified TTL channels are
+        set to False.
+        This prevents to leave running what is should not be left running"""
+        
+        ttls = defaultdict(lambda : defaultdict(list))
+        boards = self.config['ensure_off'].keys()
+        
+        # search for all the instructions that change the value of the specified
+        # channels.
+        for instr in instructions:
+            if isinstance(instr.action, lib_action.DigitalAction):
+                if instr.action.board.name in boards:
+                    for channel in self.config['ensure_off'][instr.action.board.name]:
+                        if channel in instr.action.channel:
+                            ch_idx = instr.action.channel.index(channel)
+                            ttls[instr.action.board.name][channel].append(instr.action.status[ch_idx])
+        
+        # here ttls[board][channel] is a list of all states for that
+        # channel of the board. They are time-ordered, so the last one will be 
+        # the status of that TTL at the end of the program
+        for board in ttls.keys():
+            for channel in ttls[board].keys():
+                last_status = ttls[board][channel][-1]
+                if last_status is True:
+                    raise Exception('Forgot to turn OFF {} {}.'.format(board, channel))
+
+    
+            
+    def _program_dds(self, instructions):
+    
+        # terrible hack to get the DDSs working without LUT backsearches
+        dds = defaultdict(list)
+        
+        # get DDS instructions and
+        # group the actions that correspond to individual channels
+        for instr in instructions:
+            if isinstance(instr.action, lib_action.DdsAction):
+#                    key = instr.action.board.name + '_' + str(instr.action.channel)
+                key = instr.action.board.name
+                if key in self.config['new_dds_programming_list']:
+                    dds[key].append(instr)
+        
+        # make sure they are sorted and the time is not str
+        # .time is actually int but I feel safer this way
+        for k, v in dds.items():
+            dds[k] = sorted(v, key=lambda item: float(item.time))
+        
+#        for k, v in dds.items():
+#            for instr in v:
+#                try:
+#                    print(instr.action.kwargs)
+#                except:
+#                    pass
+        
+        # Get frequency and amplitude values and store them in the state key
+        # increment n_lut starting from 1.
+        # Now I can program the DDSs with a LUT generated from state and 
+        # then each instruction will just increment the LUT
+        for k, v in dds.items():
+            for instr in v:
+
+#            KILL MEEEEE
+#                if instr.action.channel == 1:  
+#                    instr.action.state = (instr.action.frequency, 
+#                                          instr.action.amplitude,
+#                                          None, None)
+#                elif instr.action.channel == 2:
+#                    instr.action.state = (None, None,
+#                                          instr.action.frequency, 
+#                                          instr.action.amplitude)
+#                elif instr.action.channel == None:
+#                    pass
+                    # it's already a LUT action
+#                        instr.action.state = (None, None,
+#                                              instr.action.frequency, 
+#                                              instr.action.amplitude)
+#                else:
+#                    raise Exception('Wrong DDS channel.')
+#                
+                try:
+                    channel = 'ch{}'.format(instr.action.channel - 1)
+                    instr.action.state2 = {channel: {}}
+                    if instr.action.frequency:
+                        instr.action.state2[channel]['frequency'] = instr.action.frequency
+                    if instr.action.amplitude:
+                        instr.action.state2[channel]['amplitude'] = instr.action.amplitude
+                except TypeError:
+                    # then this is a FullDdsAction
+                    # take the values from the attributes, otherwise the functions
+                    # will not work
+                    
+                    instr.action.state2 = {'ch0': {}, 'ch1': {}}
+                    instr.action.state2['ch0']['frequency'] = instr.action.ch0_freq
+                    instr.action.state2['ch0']['amplitude'] = instr.action.ch0_amp
+                    instr.action.state2['ch0']['phase'] = instr.action.ch0_phase
+                    instr.action.state2['ch1']['frequency'] = instr.action.ch1_freq
+                    instr.action.state2['ch1']['amplitude'] = instr.action.ch1_amp
+                    instr.action.state2['ch1']['phase'] = instr.action.ch1_phase
+                    
+                        
+        
+            
+            lut = [instr.action.state2 for instr in v]
+            print lut
+            # this is ok but randomises the lut since set is not ordered
+            # it will still work properly but I prefer seeing it ordered 
+            # for now while I'm still debuging
+            if not self.config.get('ordered_lut', True):
+                lut_unique = list(set(lut))
+            else:
+                lut_unique = []
+                for item in lut:
+                    if item not in lut_unique:
+                        lut_unique.append(item)
+            
+            # get LUT indices
+            indices = [lut_unique.index(item) for item in lut]
+
+            for idx, instr in zip(indices, v):
+                instr.action.nn_lut = idx
+                
+                # Change this to True for new style DDS programming  
+                if self.config.get('new_dds_programming_list', True):
+                    instr.action.frequency = None
+                    instr.action.amplitude = None
+#                    if instr.action.channel is not None:
+                    instr.action.n_lut = idx
+
+        
+        if self.config['debug']:
+            for name, instrs in dds.items():
+                print(name)
+                for instr in instrs:
+                    print(instr.time)
+                    print(instr.action.__dict__)
+                    print
+                print 
+        
+        
     def _run_program(self):
         instrs_fpga = []
         if isinstance(self.main_program, lib_program.Program):
             instrs_prg = self.main_program.get_all_instructions()
+            
+            # Program the DDS new style
+            if self.config.get('new_dds_programming_list', False):
+                self._program_dds(instrs_prg)
+
+            
+            if self.config.get('lock_channel', False):
+                for name in self.config['lock_channel']:
+                    # contact feedforward server before executing the shot
+                    self._jit_update(name, instrs_prg)
+            
+            if self.config.get('ensure_off', False):
+                self._ensure_ttl_off(instrs_prg)
+
+            
             # separate normal actions from ScriptActions here
             script_actions = []
             for j, instr in enumerate(instrs_prg):
