@@ -216,7 +216,7 @@ class System(object):
         # program_commands : actions for FPGA (time + binary)
         # instr_prg : instructions for FPGA (list of Action objects + time)
         # script_actions : list of ScriptAction objects
-        
+
             valid0, program_commands, instr_prg, script_actions = self._get_program_commands()
 
             if not valid0:
@@ -237,7 +237,7 @@ class System(object):
                     print(call)
                     #TODO: how to manage exceptions or crashes here?
                     os.system(call)
-                
+
                 for fpga_id in self.fpga_list:
                     valid = fpga_id.send_program_and_run(program_commands)
                     result = result or valid

@@ -189,7 +189,10 @@ class Parser(object):
                                 #parse functions into key and lambda function
                                 m0 = re.match("^dict\s*[(]\s*(.*)[)]$", m_fun.group(1))
                                 if m0 is not None:
-                                    for m1 in re.split("\s*,\s*", m0.group(1)):
+                                    print(m0.group(1))
+                                    # for m1 in re.split("\s*,\s*", m0.group(1)):
+                                    for m1 in re.split("\s*,\s*(?=(?:[^\"\'\(\)]*[\"\'\(][^\"\'\(\)]*[\"\'\)])*[^\"\'\(\)]*$)", m0.group(1)):
+                                        print '\t', m1
                                         m2 = re.match("^(\S*)\s*=\s*lambda\s+x\s*:\s*(.*)\s*$", m1)
                                         m3 = re.match("^funct_enable\s*=\s*(True|False)\s*$", m1)
                                         if m3 is not None and m2 is None:
@@ -202,10 +205,12 @@ class Parser(object):
                                         elif m2 is not None and m3 is None:
                                             functions.append(m2.groups())
                                         else:
-                                            print "ERROR: functions of action '%s' not well formatted"%act_name
+                                            print "ERROR1: functions of action '%s' not well formatted"%act_name
                                 else:
-                                    print "ERROR: functions of action '%s' not well formatted"%act_name
+                                    print "ERROR2: functions of action '%s' not well formatted"%act_name
+                    # print(functions)
                     functions = dict(functions)
+                    # print(functions)
 
                     new_line = self.system.action_list.get_dict(act_name)
                     if new_line is None:
